@@ -69,9 +69,10 @@ grammar
                                         									{{ tex [[t]] >\!\!>\!\!= [[t']] }}
     | getLabel            ::   :: GetLabel      					{{ com get current label }}
     | getClearance        ::   :: GetClearance  					{{ com get current clearance }}
+    | labelOf t           ::   :: LabelOf       					{{ com get label of value }}
     | label t t'          ::   :: Label         					{{ com label }}
     | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
-    | labelOf t           ::   :: LabelOf       					{{ com get label of value }}
+    | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,6 +103,7 @@ grammar
   terminals :: 'terminals_' ::=
     | \                   ::   :: lambda       {{ tex \lambda }}
     | -->                 ::   :: lio_reduce   {{ tex \longrightarrow }}
+    | -->*                ::   :: lio_multi_reduce {{ tex \longrightarrow^* }}
     | ~>                  ::   :: pure_reduce  {{ tex \leadsto }}
     |  ->                 ::   :: arrow        {{ tex \rightarrow }}
     | |-                  ::   :: turnstile    {{ tex \vdash }}
@@ -113,6 +115,7 @@ grammar
 															 								 {{ coq (not ([[formula]])) }}
     | t = t'              ::   :: eqv  				 {{ ich [[t]]=[[t']] }}
     | x : T in G          ::   :: xTG 				 {{ coq (bound [[x]] [[T]] [[G]])  }}
+
 
 embed
 {{ coq
@@ -222,6 +225,10 @@ defn
     ----------------------------- :: getClearance
     G |- getClearance : LIO Label
 
+    G |- t : Labeled T
+    ---------------------- :: labelOf
+    G |- labelOf t : Label
+
     G |- t  : Label
     G |- t' : T
     --------------------------------- :: label
@@ -231,12 +238,13 @@ defn
     ---------------------- :: unlabel
     G |- unlabel t : LIO T
 
-    G |- t : Labeled T
-    ---------------------- :: labelOf
-    G |- labelOf t : Label
+    G |- t1 : Label
+    G |- t2 : LIO T
+    -------------------------------------- :: toLabeled
+    G |- toLabeled t1 t2 : LIO (Labeled T)
 
 defns
-  Jop :: '' ::=
+  Jpop :: '' ::=
 
     defn
     t1 ~> t2 ::  :: pure_reduce :: Pr_       {{ com [[t1]] reduces to [[t2]] }} by 
@@ -366,8 +374,11 @@ defns
     ------------------------ :: labelOf
     labelOf (Lb l1 t2) ~> l1
 
+defns
+  Jop :: '' ::=
+
     defn
-    m1 --> m2 ::  :: lio_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by 
+    m1 --> m2 ::  :: lio_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by
 
     ------------------------------------ :: return
     conf l c return t --> conf l c LIO t
@@ -406,6 +417,28 @@ defns
     canFlowTo l2 c ~> true
     --------------------------------------------------- :: unlabel
     conf l c unlabel (Lb l1 t2) --> conf l2 c return t2
+
+    t1 ~> t1'
+    ------------------------------------------------------ :: toLabeledCtx
+    conf l c toLabeled t1 t2 --> conf l c toLabeled t1' t2
+
+    canFlowTo l l1 ~> true
+    canFlowTo l1 c ~> true
+    conf l c t -->* conf l' c' LIO t'
+    canFlowTo l' l1 ~> true
+    ------------------------------------------------ :: toLabeled
+    conf l c toLabeled l1 t --> conf l c label l1 t'
+
+    defn
+    m1 -->* m2 ::  :: lio_multi_reduce :: '' {{ com multi step reduction }} by
+
+    -------------------------- :: lio_multi_refl
+    conf l c t -->* conf l c t
+
+    conf l1 c1 t1 --> conf l2 c2 t2
+    conf l2 c2 t2 -->* conf l3 c3 t3
+    -------------------------------- :: lio_multi_step
+    conf l1 c1 t1 -->* conf l3 c3 t3
 
 embed
 {{ coq
