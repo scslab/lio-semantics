@@ -10,8 +10,6 @@ metavar termvar, x ::=																	  {{ com term variable }}
 metavar typvar, X ::=																		  {{ com type variable }} 
 				  																								{{ tex \mathit{[[typvar]]} }}
 																													{{ coq nat }} {{ coq-equality }}
-indexvar projIdx, i ::=																		{{ com projection variable }}
-																													{{ coq nat }} {{ coq-equality }}
 
 grammar
   t :: 't_' ::=                                           {{ com term }}
@@ -20,15 +18,9 @@ grammar
     | ()           		  	::   :: VUnit                   {{ com unit value  }}
     | \ x . t             ::   :: VAbs  (+ bind x in t +) {{ com abstraction }}      
     | fix t               ::   :: VFix                    {{ com fixpoint }}
-    | ( t1 , t2 )         ::   :: VTuple                  {{ com tuple }}
     | x                   ::   :: Var                     {{ com variable }}         
     | t t'                ::   :: App                     {{ com application }}      
-    | proj i  t           ::   :: Proj                    {{ com proj }}
-                                                          {{ tex \pi_[[i]] [[t]] }}
     | if t1 then t2 else t3 :: :: IfEl                    {{ com conditional }}
-    | let x = t in t'     ::   :: Let   (+ bind x in t +)
-                                        (+ bind x in t'+)
-                                                          {{ com let }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 
@@ -38,15 +30,12 @@ grammar
     | ()           		  	::   :: VUnit                   {{ com unit value  }}
     | \ x . t             ::   :: VAbs                    {{ com abstraction }}
     | fix t               ::   :: VFix                    {{ com fixpoint }}
-    | ( t1 , t2 )         ::   :: VTuple                  {{ com tuple }}
 
   T {{ tex \tau }} :: T_ ::=                              {{ com type }}
     | Bool                ::   :: TBool                   {{ com Boolean }}
     | ()                  ::   :: TUnit                   {{ com unit }}
     | X                   ::   :: TVar                    {{ com variable }}
     | T -> T'             ::   :: TArrow                  {{ com function }}
-    | T * T'              ::   :: TProduct                {{ com product }}
-																												  {{ tex [[T]] \times [[T']] }}
     | ( T )               :: S :: paren 									{{ ich [[T]] }}
 
   G {{ tex \Gamma }} :: G_ ::= 														{{ com type environment }}
@@ -109,11 +98,6 @@ defn
     -------------------- :: abs
     G |- \x.t : T1 -> T2
 
-    G |- t1 : T1
-    G |- t2 : T2 
-    ------------------------ :: tuple
-    G |- (t1, t2) : T1 * T2
-
     G |- t : T -> T
     --------------- :: fix
     G |- fix t : T
@@ -123,23 +107,11 @@ defn
     -------------- :: app
     G |- t t' : T2
 
-
-    G |- t : T1 * T2
-    ------------------ :: proj
-    G |- proj i t : Ti
-
     G |- t1 : Bool
     G |- t2 : T
     G |- t3 : T
     ------------------------------ :: ifEl
     G |- if t1 then t2 else t3 : T
-
-    G |- t1 : T1
-    G , x : T1  |- t2 : T2
-    -------------------------- :: let
-    G |- let x = t1 in t2 : T2
-
-
 
 defns
   Jop :: '' ::=
@@ -157,13 +129,6 @@ defns
     ------------------ :: fix
     fix t ~> t (fix t)
 
-    t ~> t'
-    --------------------- :: projCtx
-    proj i t ~> proj i t'
-
-    ---------------------- :: proj
-    proj i (t1 , t2) ~> ti
-
     t1 ~> t1'
     -----------------------------------------------  :: ifCtx
     if t1 then t2 else t3 ~> if t1' then t2 else t3
@@ -173,9 +138,6 @@ defns
 
     ------------------------------  :: ifFalse
     if false then t2 else t3 ~> t3
-
-    -----------------------------  :: let
-    let x = t1 in t2 ~> {t1/x}t2
 
 embed
 {{ coq
