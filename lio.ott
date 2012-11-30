@@ -35,6 +35,7 @@ grammar
     | fix t               ::   :: VFix                    {{ com fixpoint }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
+    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %{{{ TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,6 +53,7 @@ grammar
     | fix t               ::   :: VFix                    {{ com fixpoint }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
+    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
     % ----------------------------------------------------------------------------------------------
     | x                   ::   :: Var                     {{ com variable }}         
     | t t'                ::   :: App                     {{ com application }}      
@@ -67,11 +69,14 @@ grammar
                                         									{{ tex [[t]] >\!\!>\!\!= [[t']] }}
     | getLabel            ::   :: GetLabel      					{{ com get current label }}
     | getClearance        ::   :: GetClearance  					{{ com get current clearance }}
+    | label t t'          ::   :: Label         					{{ com label }}
+    | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
+    | labelOf t           ::   :: LabelOf       					{{ com get label of value }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  m ::  'm_' ::=																				  {{ com monadic term }}
+  m ::  'm_' ::=																				  {{ com monadic LIO term }}
 	  | conf l c t				  ::    :: Config									{{ com configuration }}
     			 									 												   {{ tex \langle [[l]], [[c]], [[t]] \rangle }}
 
@@ -82,6 +87,7 @@ grammar
     | Label               ::   :: TLabel                  {{ com label }} {{ tex \ell }}
     | LIO T               ::   :: TLIO                    {{ com LIO action }} 
 															 														{{ tex [[LIO]] [[T]] }}
+    | Labeled T           ::   :: TLabeled                {{ com labeled value }}
     | X                   ::   :: TVar                    {{ com variable }}
     | T -> T'             ::   :: TArrow                  {{ com function }}
     | ( T )               :: S :: paren 									{{ ich [[T]] }}
@@ -95,18 +101,18 @@ grammar
 
   terminals :: 'terminals_' ::=
     | \                   ::   :: lambda       {{ tex \lambda }}
-    | -->                 ::   :: monad_reduce {{ tex \longrightarrow }}
+    | -->                 ::   :: lio_reduce   {{ tex \longrightarrow }}
     | ~>                  ::   :: pure_reduce  {{ tex \leadsto }}
     |  ->                 ::   :: arrow        {{ tex \rightarrow }}
     | |-                  ::   :: turnstile    {{ tex \vdash }}
-    | inT                 ::   :: in           {{ tex \in }}
+    | in                  ::   :: in           {{ tex \in }}
 
   formula :: 'formula_' ::=          
     | judgement           ::   :: judgement
     | not ( formula )     ::   :: not					 {{ tex \neg ([[ formula]]) }}
 															 								 {{ coq (not ([[formula]])) }}
     | t = t'              ::   :: eqv  				 {{ ich [[t]]=[[t']] }}
-    | x : T inT G         ::   :: xTG 				 {{ coq (bound [[x]] [[T]] [[G]])  }}
+    | x : T in G          ::   :: xTG 				 {{ coq (bound [[x]] [[T]] [[G]])  }}
 
 embed
 {{ coq
@@ -155,11 +161,16 @@ defn
 		G |- top : Label
  
 	  G |- t : T
-		------------------ :: lio
+		------------------ :: lioVal
 		G |- LIO t : LIO T
+
+    G |- t1 : Label
+    G |- t2 : T2
+    -------------------------- :: labeledVal
+    G |- Lb t1 t2 : Labeled T2
         
-    x : T inT G
-    ----------- :: valName
+    x : T in G
+    ---------- :: valName
     G |- x : T
 
     G , x : T1  |- t : T2
@@ -211,6 +222,19 @@ defn
     ----------------------------- :: getClearance
     G |- getClearance : LIO Label
 
+    G |- t  : Label
+    G |- t' : T
+    --------------------------------- :: label
+    G |- label t t' : LIO (Labeled T)
+
+    G |- t : Labeled T
+    ---------------------- :: unlabel
+    G |- unlabel t : LIO T
+
+    G |- t : Labeled T
+    ---------------------- :: labelOf
+    G |- labelOf t : Label
+
 defns
   Jop :: '' ::=
 
@@ -243,19 +267,19 @@ defns
 
 		t2 ~> t2'
 		------------------------- :: joinCtxR
-		join v1 t2 ~> join v1 t2'
+		join l1 t2 ~> join l1 t2'
 
-		not (v = bot)
+		not (l = bot)
 		--------------- :: joinBotL
-		join bot v ~> v
+		join bot l ~> l
 
-		not (v = bot)
+		not (l = bot)
 		--------------- :: joinBotR
-		join v bot ~> v
+		join l bot ~> l
 
-		v1 = v2
+		l1 = l2
 		---------------- :: joinEq
-		join v1 v2 ~> v1
+		join l1 l2 ~> l1
 
 		--------------- :: joinAB
 		join A B ~> top
@@ -263,13 +287,13 @@ defns
 		--------------- :: joinBA
 		join B A ~> top
 
-		not (v = top)
+		not (l = top)
 		----------------- :: joinTopL
-		join top v ~> top
+		join top l ~> top
 
-		not (v = top)
+		not (l = top)
 		----------------- :: joinTopR
-		join v top ~> top
+		join l top ~> top
 
 		t1 ~> t1'
 		------------------------- :: meetCtxL
@@ -277,19 +301,19 @@ defns
 
 		t2 ~> t2'
 		------------------------- :: meetCtxR
-		meet v1 t2 ~> meet v1 t2'
+		meet l1 t2 ~> meet l1 t2'
 
-		not (v = bot)
+		not (l = bot)
 		----------------- :: meetBotL
-		meet bot v ~> bot
+		meet bot l ~> bot
 
-		not (v = bot)
+		not (l = bot)
 		----------------- :: meetBotR
-		meet v bot ~> bot
+		meet l bot ~> bot
 
-		v1 = v2
+		l1 = l2
 		---------------- :: meetEq
-		meet v1 v2 ~> v1
+		meet l1 l2 ~> l1
 
 		--------------- :: meetAB
 		meet A B ~> bot
@@ -297,13 +321,13 @@ defns
 		--------------- :: meetBA
 		meet B A ~> bot
 
-		not (v = top)
+		not (l = top)
 		--------------- :: meetTopL
-		meet top v ~> v
+		meet top l ~> l
 
-		not (v = top)
+		not (l = top)
 		--------------- :: meetTopR
-		meet v top ~> v
+		meet l top ~> l
 
 		t1 ~> t1'
 		----------------------------------- :: canFlowToCtxL
@@ -311,15 +335,15 @@ defns
 
 		t2 ~> t2'
 		----------------------------------- :: canFlowToCtxR
-		canFlowTo v1 t2 ~> canFlowTo v1 t2'
+		canFlowTo l1 t2 ~> canFlowTo l1 t2'
 
-		not (v = bot)
+		not (l = bot)
 		----------------------- :: canFlowToBot
-		canFlowTo bot v ~> true
+		canFlowTo bot l ~> true
 
-		v1 = v2
+		l1 = l2
 		----------------------- :: canFlowToEq
-		canFlowTo v1 v2 ~> true
+		canFlowTo l1 l2 ~> true
 
 		---------------------- :: canFlowToAB
 		canFlowTo A B ~> false
@@ -327,12 +351,23 @@ defns
 		---------------------- :: canFlowToBA
 		canFlowTo B A ~> false
 
-		not (v = top)
+		not (l = top)
 		----------------------- :: canFlowToTop
-		canFlowTo v top ~> true
+		canFlowTo l top ~> true
+
+    t ~> t'
+    ----------------------- :: labelOfCtx1
+    labelOf t ~> labelOf t'
+
+    t1 ~> t1'
+    ----------------------------------------- :: labelOfCtx2
+    labelOf (Lb t1 t2) ~> labelOf (Lb t1' t2)
+
+    ------------------------ :: labelOf
+    labelOf (Lb l1 t2) ~> l1
 
     defn
-    m1 --> m2 ::  :: monad_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by 
+    m1 --> m2 ::  :: lio_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by 
 
     ------------------------------------ :: return
     conf l c return t --> conf l c LIO t
@@ -350,8 +385,30 @@ defns
     ------------------------------------------- :: getClearance
     conf l c getClearance --> conf l c return c
 
+    t1 ~> t1'
+    ----------------------------------------------  :: labelCtx
+    conf l c label t1 t2 --> conf l c label t1' t2
+
+    canFlowTo l  l1 ~> true
+    canFlowTo l1 c ~> true 
+    ---------------------------------------------------  :: label
+    conf l c label l1 t2 --> conf l c return (Lb l1 t2)
+
+    t ~> t'
+    ------------------------------------------ :: unlabelCtx1
+    conf l c unlabel t --> conf l c unlabel t'
+
+    t1 ~> t1'
+    ------------------------------------------------------------ :: unlabelCtx2
+    conf l c unlabel (Lb t1 t2) --> conf l c unlabel (Lb t1' t2)
+
+    join l l1 ~> l2
+    canFlowTo l2 c ~> true
+    --------------------------------------------------- :: unlabel
+    conf l c unlabel (Lb l1 t2) --> conf l2 c return t2
+
 embed
 {{ coq
-Hint Constructors pure_reduce GtT : rules.
+Hint Constructors pure_reduce lio_reduce GtT : rules.
 }}
 
