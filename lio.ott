@@ -1,0 +1,105 @@
+embed
+{{ coq
+Require Import SfLib.
+}}
+
+metavar termvar, x ::=																	  {{ com term variable }} 
+  							 	 																				{{ tex \mathit{[[termvar]]} }}
+  																												{{ coq nat }} {{ coq-equality }}
+
+metavar typvar, X ::=																		  {{ com type variable }} 
+				  																								{{ tex \mathit{[[typvar]]} }}
+																													{{ coq nat }} {{ coq-equality }}
+
+grammar
+  t :: 't_' ::=                                           {{ com term }}
+    | x                   ::   :: Var                     {{ com variable }}         
+    | \ x . t             ::   :: Lam  (+ bind x in t +)  {{ com abstraction }}      
+    | t t'                ::   :: App                     {{ com application }}      
+    | ( t )               :: S :: paren   								{{ ich [[t]] }}
+    | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
+
+  v :: 'v_' ::=                                           {{ com  value }}
+    | \ x . t             ::   :: Lam                     {{ com abstraction }}
+
+  T {{ tex \tau }} :: T_ ::=                              {{ com type }}
+    | X                   ::   :: var                     {{ com variable }}
+    | T -> T'             ::   :: arrow                   {{ com function }}
+    | ( T )               :: S :: paren 									{{ ich [[T]] }}
+
+  G {{ tex \Gamma }} :: G_ ::= 														{{ com type environment }}
+			 		 					 			 																{{ coq list (termvar*T) }}
+    | empty               ::   :: em 											{{ tex \emptyset }}
+															 														{{ coq G_nil }}
+    | G , x : T           ::   :: vn 											{{ coq (cons ([[x]],[[T]]) [[G]]) }}
+
+  terminals :: 'terminals_' ::=
+    | \                   ::   :: lambda       {{ tex \lambda }}
+    | ~>                  ::   :: pure_reduce  {{ tex \leadsto }}
+    |  ->                 ::   :: arrow        {{ tex \rightarrow }}
+    | |-                  ::   :: turnstile    {{ tex \vdash }}
+    | inT                 ::   :: in           {{ tex \in }}
+
+  formula :: 'formula_' ::=          
+    | judgement           ::   :: judgement
+    | not ( formula )     ::   :: not					 {{ coq (not [[formula]]) }}
+    | x = x'              ::   :: eqv 				 {{ ich [[x]]=[[x']] }}
+    | x : T inT G         ::   :: xTG 				 {{ coq (bound [[x]] [[T]] [[G]])  }}
+
+embed
+{{ coq
+Notation G_nil := (@nil (termvar*T)).
+Definition bound x T0 G :=
+  exists G1, exists G2,
+    (G = List.app G1 (List.cons (x,T0) G2)) /\
+    ~In x (List.map (@fst termvar T) G1).
+}}
+
+subrules
+  v <:: t
+
+freevars
+  t x :: fv 
+
+substitutions
+  single t x :: tsubst 
+
+defns
+  Jtype :: '' ::= 
+
+defn
+    G |- t : T :: :: GtT :: GtT_ by
+        
+    x : T inT G
+    ----------- :: valName
+    G |- x : T
+
+    G , x : T1  |- t : T2
+    -------------------- :: abs
+    G |- \x.t : T1 -> T2
+
+    G |- t  : T1 -> T2
+    G |- t' : T1 
+    -------------- :: app
+    G |- t t' : T2
+
+
+
+defns
+  Jop :: '' ::=
+
+    defn
+    t1 ~> t2 ::  :: pure_reduce :: ''       {{ com [[t1]] reduces to [[t2]] }} by 
+
+    t1 ~> t1'
+    ------------- :: appCtx
+    t1 t ~> t1' t
+
+    -----------------------  :: app
+    (\x.t1) t2 ~>  {t2/x}t1
+
+
+embed
+{{ coq
+Hint Constructors pure_reduce GtT : rules.
+}}
