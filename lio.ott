@@ -65,6 +65,8 @@ grammar
     | return t            ::   :: Return                  {{ com return }}
     | bind t t'           ::   :: Bind          					{{ com bind }}
                                         									{{ tex [[t]] >\!\!>\!\!= [[t']] }}
+    | getLabel            ::   :: GetLabel      					{{ com get current label }}
+    | getClearance        ::   :: GetClearance  					{{ com get current clearance }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,6 +205,11 @@ defn
     ----------------------- :: bind
     G |- bind t t' : LIO T2
 
+    ------------------------- :: getLabel
+    G |- getLabel : LIO Label
+
+    ----------------------------- :: getClearance
+    G |- getClearance : LIO Label
 
 defns
   Jop :: '' ::=
@@ -325,7 +332,7 @@ defns
 		canFlowTo v top ~> true
 
     defn
-    m1 --> m2 ::  :: monad_reduce :: Mo_       {{ com [[m1]] reduces to [[m2]] }} by 
+    m1 --> m2 ::  :: monad_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by 
 
     ------------------------------------ :: return
     conf l c return t --> conf l c LIO t
@@ -336,6 +343,12 @@ defns
 
     ----------------------------------------------------  :: bind
     conf l c bind LIO t1 t2 --> conf l c t2 t1
+
+    --------------------------------------- :: getLabel
+    conf l c getLabel --> conf l c return l
+
+    ------------------------------------------- :: getClearance
+    conf l c getClearance --> conf l c return c
 
 embed
 {{ coq
