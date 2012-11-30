@@ -12,31 +12,78 @@ metavar typvar, X ::=																		  {{ com type variable }}
 																													{{ coq nat }} {{ coq-equality }}
 
 grammar
-  t :: 't_' ::=                                           {{ com term }}
-    | true                ::   :: VTrue                   {{ com Boolean true }}
-    | false        			  ::   :: VFalse                  {{ com Boolean false }}
-    | ()           		  	::   :: VUnit                   {{ com unit value  }}
-    | \ x . t             ::   :: VAbs  (+ bind x in t +) {{ com abstraction }}      
-    | fix t               ::   :: VFix                    {{ com fixpoint }}
-    | x                   ::   :: Var                     {{ com variable }}         
-    | t t'                ::   :: App                     {{ com application }}      
-    | if t1 then t2 else t3 :: :: IfEl                    {{ com conditional }}
-    | ( t )               :: S :: paren   								{{ ich [[t]] }}
-    | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
+%{{{ LABELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	l, c :: 'l_' ::=																			  {{ com label }}
+	  | bot		              ::   :: LBot										{{ com bottom }} {{ tex \bot }}
+    | A										::   :: LA                      {{ com medium-label }} {{ tex l_[[A]] }}
+    | B										::   :: LB                      {{ com medium-label }} {{ tex l_[[B]] }}
+	  | top		              ::   :: LTop										{{ com top }} {{ tex \top }}
+%}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%{{{ VALUES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   v :: 'v_' ::=                                           {{ com  value }}
+    % ----------------------------------------------------------------------------------------------
+	  | bot		              ::   :: LBot										{{ com bottom }} {{ tex \bot }}
+    | A										::   :: LA                      {{ com medium-label }} {{ tex l_[[A]] }}
+    | B										::   :: LB                      {{ com medium-label }} {{ tex l_[[B]] }}
+	  | top		              ::   :: LTop										{{ com top }} {{ tex \top }}
+    % ----------------------------------------------------------------------------------------------
     | true                ::   :: VTrue                   {{ com Boolean true }}
     | false        			  ::   :: VFalse                  {{ com Boolean false }}
     | ()           		  	::   :: VUnit                   {{ com unit value  }}
     | \ x . t             ::   :: VAbs                    {{ com abstraction }}
     | fix t               ::   :: VFix                    {{ com fixpoint }}
+    | LIO t               ::   :: VLIO                    {{ com LIO value }}
+																													{{ tex ([[t]])^[[LIO]] }}
+%}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%{{{ TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  t :: 't_' ::=                                           {{ com term }}
+    % ----------------------------------------------------------------------------------------------
+	  | bot		              ::   :: LBot										{{ com bottom }} {{ tex \bot }}
+    | A										::   :: LA                      {{ com medium-label }} {{ tex l_[[A]] }}
+    | B										::   :: LB                      {{ com medium-label }} {{ tex l_[[B]] }}
+	  | top		              ::   :: LTop										{{ com top }} {{ tex \top }}
+    % ----------------------------------------------------------------------------------------------
+    | true                ::   :: VTrue                   {{ com Boolean true }}
+    | false        			  ::   :: VFalse                  {{ com Boolean false }}
+    | ()           		  	::   :: VUnit                   {{ com unit value  }}
+    | \ x . t             ::   :: VAbs  (+ bind x in t +) {{ com abstraction }}      
+    | fix t               ::   :: VFix                    {{ com fixpoint }}
+    | LIO t               ::   :: VLIO                    {{ com LIO value }}
+																													{{ tex ([[t]])^[[LIO]] }}
+    % ----------------------------------------------------------------------------------------------
+    | x                   ::   :: Var                     {{ com variable }}         
+    | t t'                ::   :: App                     {{ com application }}      
+    | if t1 then t2 else t3 :: :: IfEl                    {{ com conditional }}
+    | join t1 t2          ::   :: Join                    {{ com join }}
+					 										 														{{ tex [[t1]] \sqcup [[t2]]}}
+    | meet t1 t2          ::   :: Meet                    {{ com meet }}
+					 										 														{{ tex [[t1]] \sqcap [[t2]]}}
+    | canFlowTo t1 t2     ::   :: CanFlowTo               {{ com can-flow-to }} 
+									 						 														{{ tex [[t1]] \sqsubseteq [[t2]]}}
+    | return t            ::   :: Return                  {{ com return }}
+    | bind t t'           ::   :: Bind          					{{ com bind }}
+                                        									{{ tex [[t]] >\!\!>\!\!= [[t']] }}
+    | ( t )               :: S :: paren   								{{ ich [[t]] }}
+    | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
+%}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  m ::  'm_' ::=																				  {{ com monadic term }}
+	  | conf l c t				  ::    :: Config									{{ com configuration }}
+    			 									 												   {{ tex \langle [[l]], [[c]], [[t]] \rangle }}
+
+%{{{ TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   T {{ tex \tau }} :: T_ ::=                              {{ com type }}
     | Bool                ::   :: TBool                   {{ com Boolean }}
     | ()                  ::   :: TUnit                   {{ com unit }}
+    | Label               ::   :: TLabel                  {{ com label }} {{ tex \ell }}
+    | LIO T               ::   :: TLIO                    {{ com LIO action }} 
+															 														{{ tex [[LIO]] [[T]] }}
     | X                   ::   :: TVar                    {{ com variable }}
     | T -> T'             ::   :: TArrow                  {{ com function }}
     | ( T )               :: S :: paren 									{{ ich [[T]] }}
+%}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   G {{ tex \Gamma }} :: G_ ::= 														{{ com type environment }}
 			 		 					 			 																{{ coq list (termvar*T) }}
@@ -46,6 +93,7 @@ grammar
 
   terminals :: 'terminals_' ::=
     | \                   ::   :: lambda       {{ tex \lambda }}
+    | -->                 ::   :: monad_reduce {{ tex \longrightarrow }}
     | ~>                  ::   :: pure_reduce  {{ tex \leadsto }}
     |  ->                 ::   :: arrow        {{ tex \rightarrow }}
     | |-                  ::   :: turnstile    {{ tex \vdash }}
@@ -53,8 +101,9 @@ grammar
 
   formula :: 'formula_' ::=          
     | judgement           ::   :: judgement
-    | not ( formula )     ::   :: not					 {{ coq (not [[formula]]) }}
-    | x = x'              ::   :: eqv 				 {{ ich [[x]]=[[x']] }}
+    | not ( formula )     ::   :: not					 {{ tex \neg ([[ formula]]) }}
+															 								 {{ coq (not ([[formula]])) }}
+    | t = t'              ::   :: eqv  				 {{ ich [[t]]=[[t']] }}
     | x : T inT G         ::   :: xTG 				 {{ coq (bound [[x]] [[T]] [[G]])  }}
 
 embed
@@ -67,6 +116,7 @@ Definition bound x T0 G :=
 }}
 
 subrules
+  l <:: v
   v <:: t
 
 freevars
@@ -89,6 +139,22 @@ defn
 
     ------------ :: unit
     G |- () : ()
+
+		---------------- :: labelBot
+		G |- bot : Label
+
+		---------------- :: labelA
+		G |- A : Label
+
+		---------------- :: labelB
+		G |- B : Label
+
+		---------------- :: labelTop
+		G |- top : Label
+ 
+	  G |- t : T
+		------------------ :: lio
+		G |- LIO t : LIO T
         
     x : T inT G
     ----------- :: valName
@@ -103,15 +169,40 @@ defn
     G |- fix t : T
 
     G |- t  : T1 -> T2
-    G |- t' : T1 
+    G |- t1 : T1 
     -------------- :: app
-    G |- t t' : T2
+    G |- t t1 : T2
 
     G |- t1 : Bool
     G |- t2 : T
     G |- t3 : T
     ------------------------------ :: ifEl
     G |- if t1 then t2 else t3 : T
+
+
+		G |- t2 : Label
+		----------------------- :: join
+		G |- join t1 t2 : Label
+
+		G |- t1 : Label
+		G |- t2 : Label
+		----------------------- :: meet
+		G |- meet t1 t2 : Label
+
+		G |- t1 : Label
+		G |- t2 : Label
+		--------------------------- :: canFlowTo
+		G |- canFlowTo t1 t2 : Bool
+
+    G |- t : T
+    --------------------- :: return
+    G |- return t : LIO T
+
+    G |- t  : LIO T1
+    G |- t' : T1 -> LIO T2
+    ----------------------- :: bind
+    G |- bind t t' : LIO T2
+
 
 defns
   Jop :: '' ::=
@@ -120,8 +211,8 @@ defns
     t1 ~> t2 ::  :: pure_reduce :: Pr_       {{ com [[t1]] reduces to [[t2]] }} by 
 
     t1 ~> t1'
-    ------------- :: appCtx
-    t1 t ~> t1' t
+    --------------- :: appCtx
+    t1 t2 ~> t1' t2
 
     -----------------------  :: app
     (\x.t1) t2 ~>  {t2/x}t1
@@ -139,7 +230,115 @@ defns
     ------------------------------  :: ifFalse
     if false then t2 else t3 ~> t3
 
+		t1 ~> t1'
+		------------------------- :: joinCtxL
+		join t1 t2 ~> join t1' t2
+
+		t2 ~> t2'
+		------------------------- :: joinCtxR
+		join v1 t2 ~> join v1 t2'
+
+		not (v = bot)
+		--------------- :: joinBotL
+		join bot v ~> v
+
+		not (v = bot)
+		--------------- :: joinBotR
+		join v bot ~> v
+
+		v1 = v2
+		---------------- :: joinEq
+		join v1 v2 ~> v1
+
+		--------------- :: joinAB
+		join A B ~> top
+
+		--------------- :: joinBA
+		join B A ~> top
+
+		not (v = top)
+		----------------- :: joinTopL
+		join top v ~> top
+
+		not (v = top)
+		----------------- :: joinTopR
+		join v top ~> top
+
+		t1 ~> t1'
+		------------------------- :: meetCtxL
+		meet t1 t2 ~> meet t1' t2
+
+		t2 ~> t2'
+		------------------------- :: meetCtxR
+		meet v1 t2 ~> meet v1 t2'
+
+		not (v = bot)
+		----------------- :: meetBotL
+		meet bot v ~> bot
+
+		not (v = bot)
+		----------------- :: meetBotR
+		meet v bot ~> bot
+
+		v1 = v2
+		---------------- :: meetEq
+		meet v1 v2 ~> v1
+
+		--------------- :: meetAB
+		meet A B ~> bot
+
+		--------------- :: meetBA
+		meet B A ~> bot
+
+		not (v = top)
+		--------------- :: meetTopL
+		meet top v ~> v
+
+		not (v = top)
+		--------------- :: meetTopR
+		meet v top ~> v
+
+		t1 ~> t1'
+		----------------------------------- :: canFlowToCtxL
+		canFlowTo t1 t2 ~> canFlowTo t1' t2
+
+		t2 ~> t2'
+		----------------------------------- :: canFlowToCtxR
+		canFlowTo v1 t2 ~> canFlowTo v1 t2'
+
+		not (v = bot)
+		----------------------- :: canFlowToBot
+		canFlowTo bot v ~> true
+
+		v1 = v2
+		----------------------- :: canFlowToEq
+		canFlowTo v1 v2 ~> true
+
+		---------------------- :: canFlowToAB
+		canFlowTo A B ~> false
+
+		---------------------- :: canFlowToBA
+		canFlowTo B A ~> false
+
+		not (v = top)
+		----------------------- :: canFlowToTop
+		canFlowTo v top ~> true
+
+    defn
+    m1 --> m2 ::  :: monad_reduce :: Mo_       {{ com [[m1]] reduces to [[m2]] }} by 
+
+    ------------------------------------ :: return
+    conf l c return t --> conf l c LIO t
+
+    conf l c t1 --> conf l' c' t1'
+    ---------------------------------------------- :: bindCtx
+    conf l c bind t1 t2 --> conf l' c' bind t1' t2
+
+    ----------------------------------------------------  :: bind
+    conf l c bind LIO t1 t2 --> conf l c t2 t1
+
 embed
 {{ coq
 Hint Constructors pure_reduce GtT : rules.
 }}
+
