@@ -74,7 +74,7 @@ grammar
     | labelOf t           ::   :: LabelOf       					{{ com get label of value }}
     | label t t'          ::   :: Label         					{{ com label }}
     | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
-    | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
+%    | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,10 +243,10 @@ defn
     ---------------------- :: unlabel
     G |- unlabel t : LIO T
 
-    G |- t1 : Label
-    G |- t2 : LIO T
-    -------------------------------------- :: toLabeled
-    G |- toLabeled t1 t2 : LIO (Labeled T)
+%    G |- t1 : Label
+%    G |- t2 : LIO T
+%    -------------------------------------- :: toLabeled
+%    G |- toLabeled t1 t2 : LIO (Labeled T)
 
 defns
   Jpop :: '' ::=
@@ -434,16 +434,16 @@ defns
     --------------------------------------------------- :: unlabel
     conf l c unlabel (Lb l1 t2) --> conf l2 c return t2
 
-    t1 ~> t1'
-    ------------------------------------------------------ :: toLabeledCtx
-    conf l c toLabeled t1 t2 --> conf l c toLabeled t1' t2
-
-    canFlowTo l l1 ~> true
-    canFlowTo l1 c ~> true
-    conf l c t -->* conf l' c' LIO t'
-    canFlowTo l' l1 ~> true
-    ------------------------------------------------ :: toLabeled
-    conf l c toLabeled l1 t --> conf l c label l1 t'
+%    t1 ~> t1'
+%    ------------------------------------------------------ :: toLabeledCtx
+%    conf l c toLabeled t1 t2 --> conf l c toLabeled t1' t2
+%
+%    canFlowTo l l1 ~> true
+%    canFlowTo l1 c ~> true
+%    conf l c t -->* conf l' c' LIO t'
+%    canFlowTo l' l1 ~> true
+%    ------------------------------------------------ :: toLabeled
+%    conf l c toLabeled l1 t --> conf l c label l1 t'
 
     defn
     m1 -->* m2 ::  :: lio_multi_reduce :: '' {{ com multi step reduction }} by
@@ -555,11 +555,10 @@ defns
     -------------------------- :: unlabel
     eLt l unlabel t unlabel t'
 
-		eLt l t1 t1'
-		eLt l t2 t2'
-    --------------------------------------- :: toLabeled
-    eLt l toLabeled t1 t2 toLabeled t1' t2'
-
+%		eLt l t1 t1'
+%		eLt l t2 t2'
+%    --------------------------------------- :: toLabeled
+%    eLt l toLabeled t1 t2 toLabeled t1' t2'
 
     defn
     eLm l m m' ::  :: lio_erasure :: Ce_       {{ com [[m]] erases to [[m']] at level [[l]] }}
@@ -587,4 +586,70 @@ defns
 embed
 {{ coq
 Hint Constructors pure_reduce lio_reduce lio_multi_reduce GtT : rules.
+
+Tactic Notation "type_cases" tactic(first) ident(c) :=
+ first;
+ [ Case_aux c "GtT_true"
+ | Case_aux c "GtT_false"
+ | Case_aux c "GtT_unit"
+ | Case_aux c "GtT_labelBot"
+ | Case_aux c "GtT_labelA"
+ | Case_aux c "GtT_labelB"
+ | Case_aux c "GtT_labelTop"
+ | Case_aux c "GtT_labeledVal"
+ | Case_aux c "GtT_lioVal"
+ | Case_aux c "GtT_hole"
+ | Case_aux c "GtT_valName"
+ | Case_aux c "GtT_abs"
+ | Case_aux c "GtT_fix"
+ | Case_aux c "GtT_app"
+ | Case_aux c "GtT_ifEl"
+ | Case_aux c "GtT_join"
+ | Case_aux c "GtT_meet"
+ | Case_aux c "GtT_canFlowTo"
+ | Case_aux c "GtT_return"
+ | Case_aux c "GtT_bind"
+ | Case_aux c "GtT_getLabel"
+ | Case_aux c "GtT_getClearance"
+ | Case_aux c "GtT_labelOf"
+ | Case_aux c "GtT_label"
+ | Case_aux c "GtT_unlabel" ].
+
+Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "Pr_appCtx"
+  | Case_aux c "Pr_app"
+  | Case_aux c "Pr_fix"
+  | Case_aux c "Pr_ifCtx"
+  | Case_aux c "Pr_ifTrue"
+  | Case_aux c "Pr_ifFalse"
+  | Case_aux c "Pr_joinCtxL"
+  | Case_aux c "Pr_joinCtxR"
+  | Case_aux c "Pr_joinBotL"
+  | Case_aux c "Pr_joinBotR"
+  | Case_aux c "Pr_joinEq"
+  | Case_aux c "Pr_joinAB"
+  | Case_aux c "Pr_joinBA"
+  | Case_aux c "Pr_joinTopL"
+  | Case_aux c "Pr_joinTopR"
+  | Case_aux c "Pr_meetCtxL"
+  | Case_aux c "Pr_meetCtxR"
+  | Case_aux c "Pr_meetBotL"
+  | Case_aux c "Pr_meetBotR"
+  | Case_aux c "Pr_meetEq"
+  | Case_aux c "Pr_meetAB"
+  | Case_aux c "Pr_meetBA"
+  | Case_aux c "Pr_meetTopL"
+  | Case_aux c "Pr_meetTopR"
+  | Case_aux c "Pr_canFlowToCtxL"
+  | Case_aux c "Pr_canFlowToCtxR"
+  | Case_aux c "Pr_canFlowToBot"
+  | Case_aux c "Pr_canFlowToEq"
+  | Case_aux c "Pr_canFlowToAB"
+  | Case_aux c "Pr_canFlowToBA"
+  | Case_aux c "Pr_canFlowToTop"
+  | Case_aux c "Pr_labelOfCtx1"
+  | Case_aux c "Pr_labelOfCtx2"
+  | Case_aux c "Pr_labelOf" ].
+
 }}
