@@ -36,6 +36,7 @@ grammar
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
     | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
+    | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %{{{ TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,6 +55,7 @@ grammar
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
     | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
+    | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
     % ----------------------------------------------------------------------------------------------
     | x                   ::   :: Var                     {{ com variable }}         
     | t t'                ::   :: App                     {{ com application }}      
@@ -101,20 +103,21 @@ grammar
     | G , x : T           ::   :: vn 											{{ coq (cons ([[x]],[[T]]) [[G]]) }}
 
   terminals :: 'terminals_' ::=
-    | \                   ::   :: lambda       {{ tex \lambda }}
-    | -->                 ::   :: lio_reduce   {{ tex \longrightarrow }}
-    | -->*                ::   :: lio_multi_reduce {{ tex \longrightarrow^* }}
-    | ~>                  ::   :: pure_reduce  {{ tex \leadsto }}
-    |  ->                 ::   :: arrow        {{ tex \rightarrow }}
-    | |-                  ::   :: turnstile    {{ tex \vdash }}
-    | in                  ::   :: in           {{ tex \in }}
+    | \                   ::   :: lambda								  {{ tex \lambda }}
+    | -->                 ::   :: lio_reduce   						{{ tex \longrightarrow }}
+    | -->*                ::   :: lio_multi_reduce 				{{ tex \longrightarrow^* }}
+    | ~>                  ::   :: pure_reduce  						{{ tex \leadsto }}
+    | ~>*                 ::   :: pure_multi_reduce  			{{ tex \leadsto^* }}
+    |  ->                 ::   :: arrow        						{{ tex \rightarrow }}
+    | |-                  ::   :: turnstile    						{{ tex \vdash }}
+    | in                  ::   :: in           						{{ tex \in }}
 
   formula :: 'formula_' ::=          
     | judgement           ::   :: judgement
-    | not ( formula )     ::   :: not					 {{ tex \neg ([[ formula]]) }}
-															 								 {{ coq (not ([[formula]])) }}
-    | t = t'              ::   :: eqv  				 {{ ich [[t]]=[[t']] }}
-    | x : T in G          ::   :: xTG 				 {{ coq (bound [[x]] [[T]] [[G]])  }}
+    | not ( formula )     ::   :: not										  {{ tex \neg ([[ formula]]) }}
+															 								 						{{ coq (not ([[formula]])) }}
+    | t = t'              ::   :: eqv  				 						{{ ich [[t]]=[[t']] }}
+    | x : T in G          ::   :: xTG 				 						{{ coq (bound [[x]] [[T]] [[G]])  }}
 
 
 embed
@@ -162,16 +165,19 @@ defn
 
 		---------------- :: labelTop
 		G |- top : Label
- 
-	  G |- t : T
-		------------------ :: lioVal
-		G |- LIO t : LIO T
 
     G |- t1 : Label
     G |- t2 : T2
     -------------------------- :: labeledVal
     G |- Lb t1 t2 : Labeled T2
-        
+ 
+	  G |- t : T
+		------------------ :: lioVal
+		G |- LIO t : LIO T
+		
+		------------- :: hole
+		G |- hole : T
+
     x : T in G
     ---------- :: valName
     G |- x : T
@@ -194,7 +200,6 @@ defn
     G |- t3 : T
     ------------------------------ :: ifEl
     G |- if t1 then t2 else t3 : T
-
 
 		G |- t2 : Label
 		----------------------- :: join
@@ -374,6 +379,17 @@ defns
     ------------------------ :: labelOf
     labelOf (Lb l1 t2) ~> l1
 
+    defn
+    t1 ~>* t2 ::  :: pure_multi_reduce :: '' {{ com multi step reduction }} by
+
+    ------- :: pure_multi_refl
+    t ~>* t
+
+    t1 ~>  t2
+    t2 ~>* t3
+    --------- :: pure_multi_step
+    t1 ~>* t3
+
 defns
   Jop :: '' ::=
 
@@ -440,8 +456,135 @@ defns
     -------------------------------- :: lio_multi_step
     conf l1 c1 t1 -->* conf l3 c3 t3
 
+defns
+  Jer :: '' ::=
+
+    defn
+    eLt l t t' ::  :: term_erasure :: Te_       {{ com [[t]] erases to [[t']] at level [[l]] }}
+			 	 	 					 			      	 							{{ tex \varepsilon_[[l]] ([[t]]) = [[t']] }} by
+
+    ----------- :: labels
+    eLt l l1 l1
+
+    --------------- :: true
+    eLt l true true
+
+    --------------- :: false
+    eLt l false false
+
+    ---------- :: unit
+    eLt l () ()
+
+		eLt l t t'
+    -------------------- :: abs
+    eLt l \x.t \x.t'
+ 
+		eLt l t t'
+    ------------------ :: fix
+    eLt l fix t fix t'
+
+		eLt l t t'
+    ------------------ :: lio
+    eLt l LIO t LIO t'
+
+		canFlowTo t1 l ~>* true
+    ----------------------- :: lab
+    eLt l Lb t1 t2 Lb l1 t2
+
+		canFlowTo t1 l ~>* false
+    ------------------------- :: labEr
+    eLt l Lb t1 t2 Lb l1 hole
+
+    --------------- :: hole
+    eLt l hole hole
+
+    --------- :: var
+    eLt l x x
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    ----------------------- :: app
+    eLt l (t1 t2) (t1' t2')
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+		eLt l t3 t3'
+    -------------------------------------------------------- :: ifEl
+    eLt l if t1 then t2 else t3 if t1' then t2' else t3'
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    ----------------------------- :: join
+    eLt l join t1 t2 join t1' t2'
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    ----------------------------- :: meet
+    eLt l meet t1 t2 meet t1' t2'
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    --------------------------------------- :: canFlowTo
+    eLt l canFlowTo t1 t2 canFlowTo t1' t2'
+
+		eLt l t t'
+    ------------------------ :: return
+    eLt l return t return t'
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    ----------------------------- :: bind
+    eLt l bind t1 t2 bind t1' t2'
+
+    ----------------------- :: getLabel
+    eLt l getLabel getLabel
+
+    ------------------------------- :: getClearance
+    eLt l getClearance getClearance
+
+		eLt l t t'
+    -------------------------- :: labelOf
+    eLt l labelOf t labelOf t'
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    ------------------------------- :: label
+    eLt l label t1 t2 label t1' t2'
+
+		eLt l t t'
+    -------------------------- :: unlabel
+    eLt l unlabel t unlabel t'
+
+		eLt l t1 t1'
+		eLt l t2 t2'
+    --------------------------------------- :: toLabeled
+    eLt l toLabeled t1 t2 toLabeled t1' t2'
+
+
+    defn
+    eLm l m m' ::  :: lio_erasure :: Ce_       {{ com [[m]] erases to [[m']] at level [[l]] }}
+			 	 	 					 			     	 							 {{ tex \varepsilon_[[l]] ([[m]]) = [[m']] }} by
+
+		canFlowTo l1 l ~>* true
+		eLt l t1 t1'
+    ------------------------------------ :: conf
+    eLm l conf l1 c1 t1   conf l1 c1 t1'
+
+		canFlowTo l1 l ~>* false
+    ------------------------------------- :: confEr
+    eLm l conf l1 c1 t1   conf l1 c1 hole
+
+    defn
+    lio_reduce_er l m1 m2 ::  :: lio_reduce_er :: LIO_Ce_  
+																      {{ com [[m1]] reduces to [[m2]] erasing terms at level [[l]] }}
+																  		{{ tex [[m1]] \longrightarrow_[[l]] [[m2]] }} by
+
+		m1 --> m2
+    eLm l m2 m2'
+    -------------------- :: step
+    lio_reduce_er l m1 m2'
+
 embed
 {{ coq
-Hint Constructors pure_reduce lio_reduce GtT : rules.
+Hint Constructors pure_reduce lio_reduce lio_multi_reduce GtT : rules.
 }}
-
