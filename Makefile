@@ -1,5 +1,7 @@
-all: lio.pdf lio.vo
+all: lio.pdf lio.vo lio_proofs.vo
 
+lio_proofs.vo: lio.vo
+	coqc lio_proofs.v
 lio.vo: lio.v SfLib.vo
 	coqc lio.v
 SfLib.vo: SfLib.v

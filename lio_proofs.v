@@ -4,15 +4,56 @@ Require Import List.
 Require Import SfLib.
 Require Export lio.
 
+Lemma values_cannot_be_reduced : forall v t, 
+  is_v_of_t v ->
+  ~ (pure_reduce v t).
+Proof.
+  intros l t H1.
+  unfold not.
+  intro H2.
+  induction H2.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto.
+
+
 Lemma labels_cannot_be_reduced : forall l t, 
   is_l_of_t l ->
   ~ (pure_reduce l t).
 Proof.
-Admitted.
+  intros l t H1.
+  unfold not.
+  intro H2.
+  induction H2.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto. eauto. eauto.
+  eauto. eauto.
+Qed.
 
 Hint Resolve labels_cannot_be_reduced.
 
 Theorem deterministic_pure_reduce :
+(*  forall x y1 y2 : t, pure_reduce x y1 -> pure_reduce x y2 -> y1 = y2. *)
   deterministic pure_reduce.
 Proof.
   unfold deterministic. intros x y1 y2 Hy1 Hy2.
@@ -187,3 +228,63 @@ Proof.
    reflexivity.
    reflexivity.
    reflexivity.
+  Case "Pr_labelOfCtx1". inversion Hy2. subst. apply IHHy1 in H0. subst t'0. reflexivity.
+    subst. inversion Hy1.
+    subst. inversion Hy1.
+  Case "Pr_labelOfCtx2". inversion Hy2. subst. inversion H0. 
+    subst. apply IHHy1 in H2. subst t1'0. reflexivity.
+    subst. apply labels_cannot_be_reduced in Hy1. contradiction. assumption.
+  Case "Pr_labelOf". inversion Hy2. 
+    subst. inversion H1.
+    apply labels_cannot_be_reduced in H3. contradiction. assumption.
+    reflexivity.
+Qed.
+
+Hint Resolve deterministic_pure_reduce.
+
+Theorem deterministic_lio_reduce :
+  deterministic lio_reduce.
+Proof.
+  unfold deterministic. intros x y1 y2 Hy1 Hy2.
+  generalize dependent y2. 
+  lio_reduce_cases (induction Hy1) Case; intros y2 Hy2.
+  Case "LIO_return".
+    inversion Hy2. reflexivity.
+  Case "LIO_bindCtx".
+    inversion Hy2.
+    subst. apply IHHy1 in H8. inversion H8. reflexivity.
+    subst.
+    inversion Hy2.
+    subst. inversion Hy1. 
+  Case "LIO_bind".
+    inversion Hy2.
+    subst. inversion H7. reflexivity.
+  Case "LIO_getLabel".
+    inversion Hy2.
+    subst. reflexivity.
+  Case "LIO_getClearance".
+    inversion Hy2.
+    subst. reflexivity.
+  Case "LIO_labelCtx".
+    inversion Hy2.
+    subst. 
+    assert (t1' = t1'0).
+    SCase "assertion". apply  deterministic_pure_reduce with (x := t1). apply H0. apply H7.
+    subst t1'0. reflexivity.
+    subst t1 c0 l_5 t2.
+    apply labels_cannot_be_reduced in H0. inversion H0. assumption.
+  Case "LIO_label".
+    inversion Hy2.
+    subst. 
+    apply labels_cannot_be_reduced in H11. inversion H11. assumption.
+    reflexivity.
+  Case "LIO_unlabelCtx1".
+    inversion Hy2.
+    subst. 
+    assert (t' = t'0).
+    SCase "assertion". apply  deterministic_pure_reduce with (x := t5). apply H0. apply H6.
+    subst t'0. reflexivity.
+    subst. 
+    inversion H0.
+    subst. 
+    apply labels_cannot_be_reduced in H0. inversion H0. assumption.
