@@ -31,7 +31,6 @@ Proof.
   induction H2; repeat eauto.
 Qed.
 
-
 Hint Resolve values_cannot_be_reduced.
 
 Corollary labels_cannot_be_reduced : forall l t, 
@@ -46,6 +45,17 @@ Qed.
 
 Hint Resolve labels_cannot_be_reduced.
 
+Lemma values_cannot_be_lio_reduced : forall l c v l' c' t, 
+  is_v_of_t v ->
+  ~ (lio_reduce (m_Config l c v) (m_Config l' c' t)).
+Proof.
+  intros l c v l' c' t H1.
+  unfold not.
+  intro H2.
+  induction v; repeat (solve by inversion).
+Qed.
+
+Hint Resolve values_cannot_be_lio_reduced.
 
 Theorem deterministic_pure_reduce :
   deterministic pure_reduce.
@@ -231,6 +241,11 @@ Qed.
 
 Hint Resolve deterministic_pure_reduce.
 
+
+Axiom alpha_equiv_abs_mkTo : forall l c t x x' l' c' l1,
+  m_Config l c (t_Bind t (t_VAbs x  (t_MkToLabeledTCB l' c' l1 (t_Var x )))) =
+  m_Config l c (t_Bind t (t_VAbs x' (t_MkToLabeledTCB l' c' l1 (t_Var x')))).
+
 Theorem deterministic_lio_reduce :
   deterministic lio_reduce.
 Proof.
@@ -283,4 +298,39 @@ Proof.
     assert (l2 = l3).
     SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
     subst l3. reflexivity.
+  Case "LIO_toLabeled".
+    inversion Hy2.
+    subst.
+    clear. apply alpha_equiv_abs_mkTo.
+  Case "LIO_mkToLabeledTCB".
+    inversion Hy2.
+    reflexivity.
 Qed.
+    
+
+(* with big step:
+  Case "LIO_toLabeledCtx".
+    inversion Hy2.
+    subst.
+    assert (t1' = t1'0).
+    SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
+    subst t1'0. reflexivity.
+    subst t1.
+    apply labels_cannot_be_reduced in H3. solve by inversion. assumption.
+  Case "LIO_toLabeled".
+    generalize dependent y2.
+    induction H9.
+    intros.
+    subst.
+    inversion Hy2.
+    apply labels_cannot_be_reduced in H21. solve by inversion. assumption.
+    subst.
+    apply values_cannot_be_lio_multi_reduced in H9. solve by inversion. trivial.
+
+    apply lio_multi_step with (l1 := l_5) (c1 := c) (t1 := t5) in H9.
+    intros.
+    subst.
+    inversion Hy2.
+    apply labels_cannot_be_reduced in H28. solve by inversion. assumption.
+    subst.
+*)

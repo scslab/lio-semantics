@@ -73,7 +73,8 @@ grammar
     | labelOf t           ::   :: LabelOf       					{{ com get label of value }}
     | label t t'          ::   :: Label         					{{ com label }}
     | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
-%    | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
+    | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
+    | mkToLabeledTCB l c l1 t ::   :: MkToLabeledTCB       {{ com trusted primitive that restores computation }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -242,10 +243,17 @@ defn
     ---------------------- :: unlabel
     G |- unlabel t : LIO T
 
-%    G |- t1 : Label
-%    G |- t2 : LIO T
-%    -------------------------------------- :: toLabeled
-%    G |- toLabeled t1 t2 : LIO (Labeled T)
+    G |- t1 : Label
+    G |- t2 : LIO T
+    -------------------------------------- :: toLabeled
+    G |- toLabeled t1 t2 : LIO (Labeled T)
+
+    G |- l  : Label
+    G |- c  : Label
+    G |- l1 : Label
+    G |- t  : T
+    --------------------------------------------- :: mkToLabeledTCB
+    G |- mkToLabeledTCB l c l1 t : LIO (Labeled T)
 
 defns
   Jpop :: '' ::=
@@ -429,16 +437,14 @@ defns
     --------------------------------------------------- :: unlabel
     conf l c unlabel (Lb l1 t2) --> conf l2 c return t2
 
-%    t1 ~> t1'
-%    ------------------------------------------------------ :: toLabeledCtx
-%    conf l c toLabeled t1 t2 --> conf l c toLabeled t1' t2
-%
-%    canFlowTo l l1 ~> true
-%    canFlowTo l1 c ~> true
-%    conf l c t -->* conf l' c' LIO t'
-%    canFlowTo l' l1 ~> true
-%    ------------------------------------------------ :: toLabeled
-%    conf l c toLabeled l1 t --> conf l c label l1 t'
+    canFlowTo l l1 ~> true
+    canFlowTo l1 c ~> true
+    -------------------------------------------------------------------------- :: toLabeled
+    conf l c toLabeled l1 t --> conf l c bind t (\x . mkToLabeledTCB l c l1 x) 
+
+    canFlowTo l l1 ~> true
+    ------------------------------------------------------------ :: mkToLabeledTCB
+    conf l c mkToLabeledTCB l' c' l1 v --> conf l' c' label l1 v
 
     defn
     m1 -->* m2 ::  :: lio_multi_reduce :: '' {{ com multi step reduction }} by
@@ -550,10 +556,10 @@ defns
     -------------------------- :: unlabel
     eLt l unlabel t unlabel t'
 
-%		eLt l t1 t1'
-%		eLt l t2 t2'
-%    --------------------------------------- :: toLabeled
-%    eLt l toLabeled t1 t2 toLabeled t1' t2'
+		eLt l t1 t1'
+		eLt l t2 t2'
+    --------------------------------------- :: toLabeled
+    eLt l toLabeled t1 t2 toLabeled t1' t2'
 
     defn
     eLm l m m' ::  :: lio_erasure :: Ce_       {{ com [[m]] erases to [[m']] at level [[l]] }}
@@ -659,8 +665,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_label"
   | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
-(*
-  | Case_aux c "LIO_toLabeledCtx"
-  | Case_aux c "LIO_toLabeled" *) ].
+  | Case_aux c "LIO_toLabeled"
+  | Case_aux c "LIO_mkToLabeledTCB" ].
 
 }}
