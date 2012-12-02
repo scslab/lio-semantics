@@ -306,3 +306,46 @@ Proof.
     inversion Hy2.
     reflexivity.
 Qed.
+
+Definition canFlowTo (l1 l2 :t) : bool :=
+  match l1, l2 with
+    | t_LBot , _      => true
+    | _      , t_LTop => true
+    | t_LA   , t_A    => true
+    | t_LB   , t_B    => true
+    | _      , _      => false
+  end.
+
+Notation " l1  '[=' l2 " := (canFlowTo l1 l2) (at label 40).    
+
+Fixpoint erase (l term : t) : t :=
+  match term with
+   | t_LBot            => t_LBot
+   | t_LA              => t_LA
+   | t_LB              => t_LB
+   | t_LTop            => t_LTop
+   | t_VTrue           => t_VTrue
+   | t_VFalse          => t_VFalse
+   | t_VUnit           => t_VUnit
+   | t_VAbs x t5       => t_VAbs x (erase l t5)
+   | t_VFix t5         => t_VFix (erase l t5)
+   | t_VLIO t5         => t_VFix (erase l t5)
+   | t_VLabeled l1 t2  => if l1 [= l
+                           then t_VLabeled (erase l l1) (if l1 [= l then erase l t2) else hole
+   | t_VHole           => t_VHole
+   | t_Var x           => t_Var x
+   | t_App t5 t'       => t_App (erase l t5) (erase l t')
+   | t_IfEl t1 t2 t3   => t_IfEl (erase l t1) (erase l t2) (erase l t3)
+   | t_Join t1 t2      => t_Join (erase l t1) (erase l t2)
+   | t_Meet t1 t2      => t_Meet (erase l t1) (erase l t2)
+   | t_CanFlowTo t1 t2 => t_CanFlowTo (erase l t1) (erase l t2)
+   | t_Return t5       => t_Return (erase l t5)
+   | t_Bind t5 t'      => t_Bind (erase l t5) (erase l t')
+   | t_GetLabel        => t_GetLabel
+   | t_GetClearance    => t_GetClearance
+   | t_LabelOf t5      => t_LabelOf (erase l t5)
+   | t_Label t5 t'     => t_Label (erase l t5) (erase l t')
+   | t_UnLabel t5      => t_UnLabel (erase l t5)
+   | t_ToLabeled t1 t2 =>  t_ToLabeled (erase l t1) (erase l t2)
+   | t_MkToLabeledTCB l_5 c l1 t5 => t_MkToLabeledTCB (erase l l_5) (erase l c) (erase l l1) (erase l t5)
+  end.
