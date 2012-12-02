@@ -34,7 +34,7 @@ grammar
     | \ x . t             ::   :: VAbs                    {{ com abstraction }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
-    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
+    | Lb l1 t2            ::   :: VLabeled                {{ com labeled value }}
     | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -53,7 +53,7 @@ grammar
 %    | fix t               ::   :: VFix                    {{ com fixpoint }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
-    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
+    | Lb l1 t2            ::   :: VLabeled                {{ com labeled value }}
     | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
     % ----------------------------------------------------------------------------------------------
     | x                   ::   :: Var                     {{ com variable }}         
@@ -165,10 +165,10 @@ defn
 		---------------- :: labelTop
 		G |- top : Label
 
-    G |- t1 : Label
+    G |- l1 : Label
     G |- t2 : T2
     -------------------------- :: labeledVal
-    G |- Lb t1 t2 : Labeled T2
+    G |- Lb l1 t2 : Labeled T2
  
 	  G |- t : T
 		------------------ :: lioVal
@@ -372,12 +372,8 @@ defns
 		canFlowTo l top ~> true
 
     t ~> t'
-    ----------------------- :: labelOfCtx1
+    ----------------------- :: labelOfCtx
     labelOf t ~> labelOf t'
-
-    t1 ~> t1'
-    ----------------------------------------- :: labelOfCtx2
-    labelOf (Lb t1 t2) ~> labelOf (Lb t1' t2)
 
     ------------------------ :: labelOf
     labelOf (Lb l1 t2) ~> l1
@@ -425,12 +421,8 @@ defns
     conf l c label l1 t2 --> conf l c return (Lb l1 t2)
 
     t ~> t'
-    ------------------------------------------ :: unlabelCtx1
+    ------------------------------------------ :: unlabelCtx
     conf l c unlabel t --> conf l c unlabel t'
-
-    t1 ~> t1'
-    ------------------------------------------------------------ :: unlabelCtx2
-    conf l c unlabel (Lb t1 t2) --> conf l c unlabel (Lb t1' t2)
 
     join l l1 ~> l2
     canFlowTo l2 c ~> true
@@ -490,13 +482,13 @@ defns
     ------------------ :: lio
     eLt l LIO t LIO t'
 
-		canFlowTo t1 l ~>* true
+		canFlowTo l1 l ~> true
     ----------------------- :: lab
-    eLt l Lb t1 t2 Lb l1 t2
+    eLt l Lb l1 t2 Lb l1 t2
 
-		canFlowTo t1 l ~>* false
+		canFlowTo l1 l ~> false
     ------------------------- :: labEr
-    eLt l Lb t1 t2 Lb l1 hole
+    eLt l Lb l1 t2 Lb l1 hole
 
     --------------- :: hole
     eLt l hole hole
@@ -651,8 +643,7 @@ Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "Pr_canFlowToAB"
   | Case_aux c "Pr_canFlowToBA"
   | Case_aux c "Pr_canFlowToTop"
-  | Case_aux c "Pr_labelOfCtx1"
-  | Case_aux c "Pr_labelOfCtx2"
+  | Case_aux c "Pr_labelOfCtx"
   | Case_aux c "Pr_labelOf" ].
 
 
@@ -665,8 +656,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_getClearance"
   | Case_aux c "LIO_labelCtx"
   | Case_aux c "LIO_label"
-  | Case_aux c "LIO_unlabelCtx1"
-  | Case_aux c "LIO_unlabelCtx2"
+  | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
 (*
   | Case_aux c "LIO_toLabeledCtx"
