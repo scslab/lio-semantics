@@ -48,7 +48,6 @@ Hint Resolve labels_cannot_be_reduced.
 
 
 Theorem deterministic_pure_reduce :
-(*  forall x y1 y2 : t, pure_reduce x y1 -> pure_reduce x y2 -> y1 = y2. *)
   deterministic pure_reduce.
 Proof.
   unfold deterministic. intros x y1 y2 Hy1 Hy2.
@@ -58,7 +57,9 @@ Proof.
    SCase "Pr_appCtx". apply IHHy1 in H8. subst. reflexivity.
    SCase "Pr_app". subst t3. subst. solve by inversion. 
   Case "Pr_app". inversion Hy2. subst t3. solve by inversion.  reflexivity.
-  (* Case "Pr_fix". inversion Hy2. subst t5. reflexivity. *)
+  Case "Pr_fixCtx". inversion Hy2. subst t5. apply IHHy1 in H4. subst t'0. reflexivity.
+    subst. inversion Hy1.
+  Case "Pr_fix". inversion Hy2.  inversion H3. reflexivity.
   Case "Pr_ifCtx". inversion Hy2. apply IHHy1 in H11. subst. reflexivity. 
    SCase "true". subst. inversion Hy1.
    SCase "false". subst. inversion Hy1.

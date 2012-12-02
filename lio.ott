@@ -50,7 +50,7 @@ grammar
     | false        			  ::   :: VFalse                  {{ com Boolean false }}
     | ()           		  	::   :: VUnit                   {{ com unit value  }}
     | \ x . t             ::   :: VAbs  (+ bind x in t +) {{ com abstraction }}      
-%    | fix t               ::   :: VFix                    {{ com fixpoint }}
+    | fix t               ::   :: VFix                    {{ com fixpoint }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
     | Lb l1 t2            ::   :: VLabeled                {{ com labeled value }}
@@ -185,14 +185,14 @@ defn
     -------------------- :: abs
     G |- \x.t : T1 -> T2
 
-%    G |- t : T -> T
-%    --------------- :: fix
-%    G |- fix t : T
- 
     G |- t  : T1 -> T2
     G |- t1 : T1 
     -------------- :: app
     G |- t t1 : T2
+
+    G |- t : T -> T
+    --------------- :: fix
+    G |- fix t : T
 
     G |- t1 : Bool
     G |- t2 : T
@@ -260,12 +260,12 @@ defns
     -----------------------  :: app
     (\x.t1) t2 ~>  {t2/x}t1
 
-%		t ~> t'
-%    --------------- :: fixCtx
-%    fix t ~> fix t'
-%
-%    ------------------------------- :: fix
-%    fix (\x.t) ~> {(fix (\x.t))/x}t
+		t ~> t'
+    --------------- :: fixCtx
+    fix t ~> fix t'
+
+    ------------------------------- :: fix
+    fix (\x.t) ~> {(fix (\x.t))/x}t
  
     t1 ~> t1'
     -----------------------------------------------  :: ifCtx
@@ -474,9 +474,9 @@ defns
     -------------------- :: abs
     eLt l \x.t \x.t'
  
-%		eLt l t t'
-%    ------------------ :: fix
-%    eLt l fix t fix t'
+		eLt l t t'
+    ------------------ :: fix
+    eLt l fix t fix t'
 
 		eLt l t t'
     ------------------ :: lio
@@ -596,7 +596,7 @@ Tactic Notation "type_cases" tactic(first) ident(c) :=
  | Case_aux c "GtT_hole"
  | Case_aux c "GtT_valName"
  | Case_aux c "GtT_abs"
-(* | Case_aux c "GtT_fix" *)
+ | Case_aux c "GtT_fix"
  | Case_aux c "GtT_app"
  | Case_aux c "GtT_ifEl"
  | Case_aux c "GtT_join"
@@ -614,7 +614,8 @@ Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "Pr_appCtx"
   | Case_aux c "Pr_app"
-(*  | Case_aux c "Pr_fix" *)
+  | Case_aux c "Pr_fixCtx"
+  | Case_aux c "Pr_fix"
   | Case_aux c "Pr_ifCtx"
   | Case_aux c "Pr_ifTrue"
   | Case_aux c "Pr_ifFalse"

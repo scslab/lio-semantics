@@ -38,6 +38,7 @@ Inductive t : Set :=  (*r term *)
  | t_VFalse : t (*r Boolean false *)
  | t_VUnit : t (*r unit value *)
  | t_VAbs (x:termvar) (t5:t) (*r abstraction *)
+ | t_VFix (t5:t) (*r fixpoint *)
  | t_VLIO (t5:t) (*r LIO value *)
  | t_VLabeled (l1:t) (t2:t) (*r labeled value *)
  | t_VHole : t (*r hole *)
@@ -77,6 +78,7 @@ Definition is_l_of_t (t_6:t) : Prop :=
   | t_VFalse => False
   | t_VUnit => False
   | (t_VAbs x t5) => False
+  | (t_VFix t5) => False
   | (t_VLIO t5) => False
   | (t_VLabeled l1 t2) => False
   | t_VHole => False
@@ -105,6 +107,7 @@ Fixpoint is_t_of_t (t_6:t) : Prop :=
   | t_VFalse => (True)
   | t_VUnit => (True)
   | (t_VAbs x t5) => ((is_t_of_t t5))
+  | (t_VFix t5) => ((is_t_of_t t5))
   | (t_VLIO t5) => ((is_t_of_t t5))
   | (t_VLabeled l1 t2) => ((is_l_of_t l1) /\ (is_t_of_t t2))
   | t_VHole => (True)
@@ -133,6 +136,7 @@ Definition is_v_of_t (t_6:t) : Prop :=
   | t_VFalse => (True)
   | t_VUnit => (True)
   | (t_VAbs x t5) => ((is_t_of_t t5))
+  | (t_VFix t5) => False
   | (t_VLIO t5) => ((is_t_of_t t5))
   | (t_VLabeled l1 t2) => ((is_l_of_t l1) /\ (is_t_of_t t2))
   | t_VHole => (True)
@@ -183,6 +187,7 @@ Fixpoint fv_t (t_6:t) : list termvar :=
   | t_VFalse => nil
   | t_VUnit => nil
   | (t_VAbs x t5) => ((list_minus eq_termvar (fv_t t5) (cons x nil)))
+  | (t_VFix t5) => ((fv_t t5))
   | (t_VLIO t5) => ((fv_t t5))
   | (t_VLabeled l1 t2) => ((fv_t t2))
   | t_VHole => nil
@@ -218,6 +223,7 @@ Fixpoint tsubst_t (t_6:t) (x5:termvar) (t__7:t) {struct t__7} : t :=
   | t_VFalse => t_VFalse 
   | t_VUnit => t_VUnit 
   | (t_VAbs x t5) => t_VAbs x (if list_mem eq_termvar x5 (cons x nil) then t5 else (tsubst_t t_6 x5 t5))
+  | (t_VFix t5) => t_VFix (tsubst_t t_6 x5 t5)
   | (t_VLIO t5) => t_VLIO (tsubst_t t_6 x5 t5)
   | (t_VLabeled l1 t2) => t_VLabeled l1 (tsubst_t t_6 x5 t2)
   | t_VHole => t_VHole 
@@ -285,6 +291,10 @@ Inductive GtT : G -> t -> T -> Prop :=    (* defn GtT *)
      GtT G5 t_5 (T_TArrow T1 T2) ->
      GtT G5 t1 T1 ->
      GtT G5 (t_App t_5 t1) T2
+ | GtT_fix : forall (G5:G) (t5:t) (T5:T),
+     is_t_of_t t5 ->
+     GtT G5 t5 (T_TArrow T5 T5) ->
+     GtT G5 (t_VFix t5) T5
  | GtT_ifEl : forall (G5:G) (t1 t2 t3:t) (T5:T),
      is_t_of_t t1 ->
      is_t_of_t t2 ->
@@ -352,6 +362,14 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
      is_t_of_t t1 ->
      is_t_of_t t2 ->
      pure_reduce (t_App  (t_VAbs x t1)  t2)  ( tsubst_t  t2   x   t1  ) 
+ | Pr_fixCtx : forall (t5 t':t),
+     is_t_of_t t5 ->
+     is_t_of_t t' ->
+     pure_reduce t5 t' ->
+     pure_reduce (t_VFix t5) (t_VFix t')
+ | Pr_fix : forall (x:termvar) (t5:t),
+     is_t_of_t t5 ->
+     pure_reduce (t_VFix  (t_VAbs x t5) )  ( tsubst_t   (t_VFix  (t_VAbs x t5) )    x   t5  ) 
  | Pr_ifCtx : forall (t1 t2 t3 t1':t),
      is_t_of_t t1 ->
      is_t_of_t t2 ->
@@ -593,6 +611,12 @@ Inductive term_erasure : t -> t -> t -> Prop :=    (* defn term_erasure *)
      is_t_of_t t' ->
      term_erasure l5 t5 t' ->
      term_erasure l5 (t_VAbs x t5) (t_VAbs x t')
+ | Te_fix : forall (l5 t5 t':t),
+     is_l_of_t l5 ->
+     is_t_of_t t5 ->
+     is_t_of_t t' ->
+     term_erasure l5 t5 t' ->
+     term_erasure l5 (t_VFix t5) (t_VFix t')
  | Te_lio : forall (l5 t5 t':t),
      is_l_of_t l5 ->
      is_t_of_t t5 ->
@@ -755,7 +779,7 @@ Tactic Notation "type_cases" tactic(first) ident(c) :=
  | Case_aux c "GtT_hole"
  | Case_aux c "GtT_valName"
  | Case_aux c "GtT_abs"
-(* | Case_aux c "GtT_fix" *)
+ | Case_aux c "GtT_fix"
  | Case_aux c "GtT_app"
  | Case_aux c "GtT_ifEl"
  | Case_aux c "GtT_join"
@@ -773,7 +797,8 @@ Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "Pr_appCtx"
   | Case_aux c "Pr_app"
-(*  | Case_aux c "Pr_fix" *)
+  | Case_aux c "Pr_fixCtx"
+  | Case_aux c "Pr_fix"
   | Case_aux c "Pr_ifCtx"
   | Case_aux c "Pr_ifTrue"
   | Case_aux c "Pr_ifFalse"
