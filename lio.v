@@ -56,7 +56,7 @@ Inductive t : Set :=  (*r term *)
  | t_Label (t5:t) (t':t) (*r label *)
  | t_UnLabel (t5:t) (*r unlabel *)
  | t_ToLabeled (t1:t) (t2:t) (*r execute sensitive computation *)
- | t_MkToLabeledTCB (l_5:t) (c:t) (l1:t) (t5:t) (*r trusted primitive that restores computation *).
+ | t_MkToLabeledTCB (l_5:t) (c:t) (l1:t) (t5:t) (*r trusted primitive that restores state *).
 
 Definition G : Set := list (termvar*T).
 
@@ -527,18 +527,7 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
      is_l_of_t l1 ->
      is_t_of_t t2 ->
      is_l_of_t l1 ->
-     pure_reduce (t_LabelOf  (t_VLabeled l1 t2) ) l1
-with pure_multi_reduce : t -> t -> Prop :=    (* defn pure_multi_reduce *)
- | pure_multi_refl : forall (t5:t),
-     is_t_of_t t5 ->
-     pure_multi_reduce t5 t5
- | pure_multi_step : forall (t1 t3 t2:t),
-     is_t_of_t t1 ->
-     is_t_of_t t3 ->
-     is_t_of_t t2 ->
-     pure_reduce t1 t2 ->
-     pure_multi_reduce t2 t3 ->
-     pure_multi_reduce t1 t3.
+     pure_reduce (t_LabelOf  (t_VLabeled l1 t2) ) l1.
 (** definitions *)
 
 (* defns Jop *)
@@ -621,207 +610,60 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      is_l_of_t l1 ->
      is_l_of_t l_5 ->
      pure_reduce (t_CanFlowTo l_5 l1) t_VTrue ->
-     lio_reduce (m_Config l_5 c (t_MkToLabeledTCB l' c' l1 v5)) (m_Config l' c' (t_Label l1 v5))
-with lio_multi_reduce : m -> m -> Prop :=    (* defn lio_multi_reduce *)
- | lio_multi_refl : forall (l5 c t5:t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     lio_multi_reduce (m_Config l5 c t5) (m_Config l5 c t5)
- | lio_multi_step : forall (l1 c1 t1 l3 c3 t3 l2 c2 t2:t),
-     is_l_of_t l1 ->
-     is_t_of_t t1 ->
-     is_l_of_t l3 ->
-     is_t_of_t t3 ->
-     is_l_of_t l2 ->
-     is_t_of_t t2 ->
-     lio_reduce (m_Config l1 c1 t1) (m_Config l2 c2 t2) ->
-     lio_multi_reduce (m_Config l2 c2 t2) (m_Config l3 c3 t3) ->
-     lio_multi_reduce (m_Config l1 c1 t1) (m_Config l3 c3 t3).
-(** definitions *)
+     lio_reduce (m_Config l_5 c (t_MkToLabeledTCB l' c' l1 v5)) (m_Config l' c' (t_Label l1 v5)).
+Hint Constructors pure_reduce lio_reduce GtT : rules.
 
-(* defns Jer *)
-Inductive term_erasure : t -> t -> t -> Prop :=    (* defn term_erasure *)
- | Te_labels : forall (l_5 l1:t),
-     is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     term_erasure l_5 l1 l1
- | Te_true : forall (l5:t),
-     is_l_of_t l5 ->
-     term_erasure l5 t_VTrue t_VTrue
- | Te_false : forall (l5:t),
-     is_l_of_t l5 ->
-     term_erasure l5 t_VFalse t_VFalse
- | Te_unit : forall (l5:t),
-     is_l_of_t l5 ->
-     term_erasure l5 t_VUnit t_VUnit
- | Te_abs : forall (l5:t) (x:termvar) (t5 t':t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
-     term_erasure l5 t5 t' ->
-     term_erasure l5 (t_VAbs x t5) (t_VAbs x t')
- | Te_fix : forall (l5 t5 t':t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
-     term_erasure l5 t5 t' ->
-     term_erasure l5 (t_VFix t5) (t_VFix t')
- | Te_lio : forall (l5 t5 t':t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
-     term_erasure l5 t5 t' ->
-     term_erasure l5 (t_VLIO t5) (t_VLIO t')
- | Te_lab : forall (t2 l1 l_5:t),
-     is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t2 ->
-     is_l_of_t l1 ->
-     is_l_of_t l_5 ->
-     pure_reduce (t_CanFlowTo l1 l_5) t_VTrue ->
-     term_erasure l_5 (t_VLabeled l1 t2) (t_VLabeled l1 t2)
- | Te_labEr : forall (t2 l1 l_5:t),
-     is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t2 ->
-     is_l_of_t l1 ->
-     is_l_of_t l_5 ->
-     pure_reduce (t_CanFlowTo l1 l_5) t_VFalse ->
-     term_erasure l_5 (t_VLabeled l1 t2) (t_VLabeled l1 t_VHole)
- | Te_hole : forall (l5:t),
-     is_l_of_t l5 ->
-     term_erasure l5 t_VHole t_VHole
- | Te_var : forall (l5:t) (x:termvar),
-     is_l_of_t l5 ->
-     term_erasure l5 (t_Var x) (t_Var x)
- | Te_app : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5  (t_App t1 t2)   (t_App t1' t2') 
- | Te_ifEl : forall (l5 t1 t2 t3 t1' t2' t3':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t3 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     is_t_of_t t3' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 t3 t3' ->
-     term_erasure l5 (t_IfEl t1 t2 t3) (t_IfEl t1' t2' t3')
- | Te_join : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 (t_Join t1 t2) (t_Join t1' t2')
- | Te_meet : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 (t_Meet t1 t2) (t_Meet t1' t2')
- | Te_canFlowTo : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 (t_CanFlowTo t1 t2) (t_CanFlowTo t1' t2')
- | Te_return : forall (l5 t5 t':t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
-     term_erasure l5 t5 t' ->
-     term_erasure l5 (t_Return t5) (t_Return t')
- | Te_bind : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 (t_Bind t1 t2) (t_Bind t1' t2')
- | Te_getLabel : forall (l5:t),
-     is_l_of_t l5 ->
-     term_erasure l5 t_GetLabel t_GetLabel
- | Te_getClearance : forall (l5:t),
-     is_l_of_t l5 ->
-     term_erasure l5 t_GetClearance t_GetClearance
- | Te_labelOf : forall (l5 t5 t':t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
-     term_erasure l5 t5 t' ->
-     term_erasure l5 (t_LabelOf t5) (t_LabelOf t')
- | Te_label : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 (t_Label t1 t2) (t_Label t1' t2')
- | Te_unlabel : forall (l5 t5 t':t),
-     is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
-     term_erasure l5 t5 t' ->
-     term_erasure l5 (t_UnLabel t5) (t_UnLabel t')
- | Te_toLabeled : forall (l5 t1 t2 t1' t2':t),
-     is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
-     is_t_of_t t2' ->
-     term_erasure l5 t1 t1' ->
-     term_erasure l5 t2 t2' ->
-     term_erasure l5 (t_ToLabeled t1 t2) (t_ToLabeled t1' t2')
-with lio_erasure : t -> m -> m -> Prop :=    (* defn lio_erasure *)
- | Ce_conf : forall (c1 t1 t1' l1 l_5:t),
-     is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t1 ->
-     is_t_of_t t1' ->
-     is_l_of_t l1 ->
-     is_l_of_t l_5 ->
-     pure_multi_reduce (t_CanFlowTo l1 l_5) t_VTrue ->
-     term_erasure l_5 t1 t1' ->
-     lio_erasure l_5 (m_Config l1 c1 t1) (m_Config l1 c1 t1')
- | Ce_confEr : forall (c1 t1 l1 l_5:t),
-     is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t1 ->
-     is_l_of_t l1 ->
-     is_l_of_t l_5 ->
-     pure_multi_reduce (t_CanFlowTo l1 l_5) t_VFalse ->
-     lio_erasure l_5 (m_Config l1 c1 t1) (m_Config l1 c1 t_VHole)
-with lio_reduce_er : t -> m -> m -> Prop :=    (* defn lio_reduce_er *)
- | LIO_Ce_step : forall (l5:t) (m1 m2' m2:m),
-     is_l_of_t l5 ->
-     is_m_of_m m1 ->
-     is_m_of_m m2' ->
-     is_m_of_m m2 ->
-     lio_reduce m1 m2 ->
-     lio_erasure l5 m2 m2' ->
-     lio_reduce_er l5 m1 m2'.
-Hint Constructors pure_reduce lio_reduce lio_multi_reduce GtT : rules.
+Tactic Notation "label_cases" tactic(first) ident(c) :=
+	first;
+  [ Case_aux c "label_LBot"
+  | Case_aux c "label_LA"
+  | Case_aux c "label_LB"
+  | Case_aux c "label_LTop" ].
+
+Tactic Notation "value_cases" tactic(first) ident(c) :=
+	first;
+  [ Case_aux c "value_LBot"
+  | Case_aux c "value_LA"
+  | Case_aux c "value_LB"
+  | Case_aux c "value_LTop"
+  | Case_aux c "value_VTrue"
+  | Case_aux c "value_VFalse"
+  | Case_aux c "value_VUnit"
+  | Case_aux c "value_VAbs"
+  | Case_aux c "value_VFix"
+  | Case_aux c "value_VLIO"
+  | Case_aux c "value_VLabeled"
+  | Case_aux c "value_VHole" ].
+
+Tactic Notation "term_cases" tactic(first) ident(c) :=
+	first;
+  [ Case_aux c "term_LBot"
+  | Case_aux c "term_LA"
+  | Case_aux c "term_LB"
+  | Case_aux c "term_LTop"
+  | Case_aux c "term_VTrue"
+  | Case_aux c "term_VFalse"
+  | Case_aux c "term_VUnit"
+  | Case_aux c "term_VAbs"
+  | Case_aux c "term_VFix"
+  | Case_aux c "term_VLIO"
+  | Case_aux c "term_VLabeled"
+  | Case_aux c "term_VHole"
+  | Case_aux c "term_Var"
+  | Case_aux c "term_App"
+  | Case_aux c "term_IfEl"
+  | Case_aux c "term_Join"
+  | Case_aux c "term_Meet"
+  | Case_aux c "term_CanFlowTo"
+  | Case_aux c "term_Return"
+  | Case_aux c "term_Bind"
+  | Case_aux c "term_GetLabel"
+  | Case_aux c "term_GetClearance"
+  | Case_aux c "term_LabelOf"
+  | Case_aux c "term_Label"
+  | Case_aux c "term_UnLabel"
+  | Case_aux c "term_ToLabeled"
+  | Case_aux c "term_MkToLabeledTCB" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
  first;

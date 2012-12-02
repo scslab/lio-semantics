@@ -306,31 +306,3 @@ Proof.
     inversion Hy2.
     reflexivity.
 Qed.
-    
-
-(* with big step:
-  Case "LIO_toLabeledCtx".
-    inversion Hy2.
-    subst.
-    assert (t1' = t1'0).
-    SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
-    subst t1'0. reflexivity.
-    subst t1.
-    apply labels_cannot_be_reduced in H3. solve by inversion. assumption.
-  Case "LIO_toLabeled".
-    generalize dependent y2.
-    induction H9.
-    intros.
-    subst.
-    inversion Hy2.
-    apply labels_cannot_be_reduced in H21. solve by inversion. assumption.
-    subst.
-    apply values_cannot_be_lio_multi_reduced in H9. solve by inversion. trivial.
-
-    apply lio_multi_step with (l1 := l_5) (c1 := c) (t1 := t5) in H9.
-    intros.
-    subst.
-    inversion Hy2.
-    apply labels_cannot_be_reduced in H28. solve by inversion. assumption.
-    subst.
-*)

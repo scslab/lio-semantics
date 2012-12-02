@@ -74,7 +74,7 @@ grammar
     | label t t'          ::   :: Label         					{{ com label }}
     | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
     | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
-    | mkToLabeledTCB l c l1 t ::   :: MkToLabeledTCB       {{ com trusted primitive that restores computation }}
+    | mkToLabeledTCB l c l1 t ::   :: MkToLabeledTCB      {{ com trusted primitive that restores state }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,9 +105,7 @@ grammar
   terminals :: 'terminals_' ::=
     | \                   ::   :: lambda								  {{ tex \lambda }}
     | -->                 ::   :: lio_reduce   						{{ tex \longrightarrow }}
-    | -->*                ::   :: lio_multi_reduce 				{{ tex \longrightarrow^* }}
     | ~>                  ::   :: pure_reduce  						{{ tex \leadsto }}
-    | ~>*                 ::   :: pure_multi_reduce  			{{ tex \leadsto^* }}
     |  ->                 ::   :: arrow        						{{ tex \rightarrow }}
     | |-                  ::   :: turnstile    						{{ tex \vdash }}
     | in                  ::   :: in           						{{ tex \in }}
@@ -386,17 +384,6 @@ defns
     ------------------------ :: labelOf
     labelOf (Lb l1 t2) ~> l1
 
-    defn
-    t1 ~>* t2 ::  :: pure_multi_reduce :: '' {{ com multi step reduction }} by
-
-    ------- :: pure_multi_refl
-    t ~>* t
-
-    t1 ~>  t2
-    t2 ~>* t3
-    --------- :: pure_multi_step
-    t1 ~>* t3
-
 defns
   Jop :: '' ::=
 
@@ -446,147 +433,62 @@ defns
     ------------------------------------------------------------ :: mkToLabeledTCB
     conf l c mkToLabeledTCB l' c' l1 v --> conf l' c' label l1 v
 
-    defn
-    m1 -->* m2 ::  :: lio_multi_reduce :: '' {{ com multi step reduction }} by
-
-    -------------------------- :: lio_multi_refl
-    conf l c t -->* conf l c t
-
-    conf l1 c1 t1 --> conf l2 c2 t2
-    conf l2 c2 t2 -->* conf l3 c3 t3
-    -------------------------------- :: lio_multi_step
-    conf l1 c1 t1 -->* conf l3 c3 t3
-
-defns
-  Jer :: '' ::=
-
-    defn
-    eLt l t t' ::  :: term_erasure :: Te_       {{ com [[t]] erases to [[t']] at level [[l]] }}
-			 	 	 					 			      	 							{{ tex \varepsilon_[[l]] ([[t]]) = [[t']] }} by
-
-    ----------- :: labels
-    eLt l l1 l1
-
-    --------------- :: true
-    eLt l true true
-
-    --------------- :: false
-    eLt l false false
-
-    ---------- :: unit
-    eLt l () ()
-
-		eLt l t t'
-    -------------------- :: abs
-    eLt l \x.t \x.t'
- 
-		eLt l t t'
-    ------------------ :: fix
-    eLt l fix t fix t'
-
-		eLt l t t'
-    ------------------ :: lio
-    eLt l LIO t LIO t'
-
-		canFlowTo l1 l ~> true
-    ----------------------- :: lab
-    eLt l Lb l1 t2 Lb l1 t2
-
-		canFlowTo l1 l ~> false
-    ------------------------- :: labEr
-    eLt l Lb l1 t2 Lb l1 hole
-
-    --------------- :: hole
-    eLt l hole hole
-
-    --------- :: var
-    eLt l x x
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    ----------------------- :: app
-    eLt l (t1 t2) (t1' t2')
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-		eLt l t3 t3'
-    -------------------------------------------------------- :: ifEl
-    eLt l if t1 then t2 else t3 if t1' then t2' else t3'
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    ----------------------------- :: join
-    eLt l join t1 t2 join t1' t2'
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    ----------------------------- :: meet
-    eLt l meet t1 t2 meet t1' t2'
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    --------------------------------------- :: canFlowTo
-    eLt l canFlowTo t1 t2 canFlowTo t1' t2'
-
-		eLt l t t'
-    ------------------------ :: return
-    eLt l return t return t'
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    ----------------------------- :: bind
-    eLt l bind t1 t2 bind t1' t2'
-
-    ----------------------- :: getLabel
-    eLt l getLabel getLabel
-
-    ------------------------------- :: getClearance
-    eLt l getClearance getClearance
-
-		eLt l t t'
-    -------------------------- :: labelOf
-    eLt l labelOf t labelOf t'
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    ------------------------------- :: label
-    eLt l label t1 t2 label t1' t2'
-
-		eLt l t t'
-    -------------------------- :: unlabel
-    eLt l unlabel t unlabel t'
-
-		eLt l t1 t1'
-		eLt l t2 t2'
-    --------------------------------------- :: toLabeled
-    eLt l toLabeled t1 t2 toLabeled t1' t2'
-
-    defn
-    eLm l m m' ::  :: lio_erasure :: Ce_       {{ com [[m]] erases to [[m']] at level [[l]] }}
-			 	 	 					 			     	 							 {{ tex \varepsilon_[[l]] ([[m]]) = [[m']] }} by
-
-		canFlowTo l1 l ~>* true
-		eLt l t1 t1'
-    ------------------------------------ :: conf
-    eLm l conf l1 c1 t1   conf l1 c1 t1'
-
-		canFlowTo l1 l ~>* false
-    ------------------------------------- :: confEr
-    eLm l conf l1 c1 t1   conf l1 c1 hole
-
-    defn
-    lio_reduce_er l m1 m2 ::  :: lio_reduce_er :: LIO_Ce_  
-																      {{ com [[m1]] reduces to [[m2]] erasing terms at level [[l]] }}
-																  		{{ tex [[m1]] \longrightarrow_[[l]] [[m2]] }} by
-
-		m1 --> m2
-    eLm l m2 m2'
-    -------------------- :: step
-    lio_reduce_er l m1 m2'
 
 embed
 {{ coq
-Hint Constructors pure_reduce lio_reduce lio_multi_reduce GtT : rules.
+Hint Constructors pure_reduce lio_reduce GtT : rules.
+
+Tactic Notation "label_cases" tactic(first) ident(c) :=
+	first;
+  [ Case_aux c "label_LBot"
+  | Case_aux c "label_LA"
+  | Case_aux c "label_LB"
+  | Case_aux c "label_LTop" ].
+
+Tactic Notation "value_cases" tactic(first) ident(c) :=
+	first;
+  [ Case_aux c "value_LBot"
+  | Case_aux c "value_LA"
+  | Case_aux c "value_LB"
+  | Case_aux c "value_LTop"
+  | Case_aux c "value_VTrue"
+  | Case_aux c "value_VFalse"
+  | Case_aux c "value_VUnit"
+  | Case_aux c "value_VAbs"
+  | Case_aux c "value_VFix"
+  | Case_aux c "value_VLIO"
+  | Case_aux c "value_VLabeled"
+  | Case_aux c "value_VHole" ].
+
+Tactic Notation "term_cases" tactic(first) ident(c) :=
+	first;
+  [ Case_aux c "term_LBot"
+  | Case_aux c "term_LA"
+  | Case_aux c "term_LB"
+  | Case_aux c "term_LTop"
+  | Case_aux c "term_VTrue"
+  | Case_aux c "term_VFalse"
+  | Case_aux c "term_VUnit"
+  | Case_aux c "term_VAbs"
+  | Case_aux c "term_VFix"
+  | Case_aux c "term_VLIO"
+  | Case_aux c "term_VLabeled"
+  | Case_aux c "term_VHole"
+  | Case_aux c "term_Var"
+  | Case_aux c "term_App"
+  | Case_aux c "term_IfEl"
+  | Case_aux c "term_Join"
+  | Case_aux c "term_Meet"
+  | Case_aux c "term_CanFlowTo"
+  | Case_aux c "term_Return"
+  | Case_aux c "term_Bind"
+  | Case_aux c "term_GetLabel"
+  | Case_aux c "term_GetClearance"
+  | Case_aux c "term_LabelOf"
+  | Case_aux c "term_Label"
+  | Case_aux c "term_UnLabel"
+  | Case_aux c "term_ToLabeled"
+  | Case_aux c "term_MkToLabeledTCB" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
  first;
