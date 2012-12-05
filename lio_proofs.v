@@ -400,37 +400,56 @@ Fixpoint erase_term (l term : t) : t :=
    | t_MkToLabeledTCB l_5 c l1 t5 => t_MkToLabeledTCB l_5 c l1 (erase_term l t5)
   end.
 
-Inductive erase_term_inv : t -> t -> t -> Prop :=
-  | erase_term_inv_t_VAbs : forall l t5,
-     t_VAbs x (erase_term l t5) -> erase_term l (t_VAbs x t5)
-  | erase_term_inv_t_VFix : forall l t5,
-     t_VFix (erase_term l t5) -> erase_term l (t_VFix t5)
-  | erase_term_inv_t_VLIO : forall l t5,
-     t_VFix (erase_term l t5) -> erase_term l (t_VLIO t5)
-  | erase_term_inv_t_VLabeled1 : forall l l1 t2,
-    t_VLabeled l1 (erase_term l t2) -> erase_term l (t_VLabeled l1 t2)
-(*
-  | t_VLabeled l1 t2  => t_VLabeled l1 (if canFlowTo l1 l === Some true
-                                           then erase_term l t2
-                                           else t_VHole)
-*)
-   | erase_term_inv_t_VHole : forall l t1,
-     t_VHole -> erase_term l t1
-   | ersae_term_inv_t_App : forall l t5 t',
-     t_App (erase_term l t5) (erase_term l t') -> erase_temr l (t_App t5 t')
-   | t_IfEl t1 t2 t3   => t_IfEl t1 (erase_term l t2) (erase_term l t3)
-   | t_Join t1 t2      => t_Join t1 t2
-   | t_Meet t1 t2      => t_Meet t1 t2
-   | t_CanFlowTo t1 t2 => t_CanFlowTo t1 t2
-   | t_Return t5       => t_Return (erase_term l t5)
-   | t_Bind t5 t'      => t_Bind (erase_term l t5) (erase_term l t')
-   | t_GetLabel        => t_GetLabel
-   | t_GetClearance    => t_GetClearance
-   | t_LabelOf t5      => t_LabelOf (erase_term l t5)
-   | t_Label t5 t'     => t_Label t5 (erase_term l t')
-   | t_UnLabel t5      => t_UnLabel (erase_term l t5)
-   | t_ToLabeled t1 t2 => t_ToLabeled t1 (erase_term l t2)
-   | t_MkToLabeledTCB l_5 c l1 t5 => t_MkToLabeledTCB l_5 c l1 (erase_term l t5)
+Definition erase_term_inv_t_VAbs : forall l x t5,
+  is_l_of_t l ->
+  t_VAbs x (erase_term l t5) = erase_term l (t_VAbs x t5).
+Definition erase_term_inv_t_VFix : forall l t5,
+  is_l_of_t l ->
+  t_VFix (erase_term l t5) = erase_term l (t_VFix t5).
+Definition erase_term_inv_t_VLIO : forall l t5,
+  is_l_of_t l ->
+  t_VLIO (erase_term l t5) = erase_term l (t_VLIO t5).
+Definition erase_term_inv_t_VLabeled1 : forall l l1 t2,
+  is_l_of_t l ->
+  is_l_of_t l1 ->
+  t_VLabeled l1 (erase_term l t2) = erase_term l (t_VLabeled l1 t2).
+Definition erase_term_inv_t_VLabeled2 : forall l l1 t2,
+  is_l_of_t l ->
+  is_l_of_t l1 ->
+  t_VLabeled l1 t_VHole = erase_term l (t_VLabeled l1 t2).
+Definition erase_term_inv_t_VHole : forall l,
+  is_l_of_t l ->
+  t_VHole = erase_term l (t_VHole).
+Definition erase_term_inv_t_App : forall l t5 t',
+  is_l_of_t l ->
+  t_App (erase_term l t5) (erase_term l t') = erase_term l (t_App t5 t').
+Definition erase_term_inv_t_IfEl : forall l t1 t2 t3,
+  is_l_of_t l ->
+  t_IfEl t1 (erase_term l t2) (erase_term l t3) = erase_term l (t_IfEl t1 t2 t3).
+Definition erase_term_inv_t_Return : forall l t5,
+  is_l_of_t l ->
+  t_Return (erase_term l t5) = erase_term l (t_Return t5).
+Definition erase_term_inv_t_Bind : forall l t5 t',
+  is_l_of_t l ->
+  t_Bind (erase_term l t5) (erase_term l t') = erase_term l (t_Bind t5 t').
+Definition erase_term_inv_t_LabelOf : forall l t5, 
+  is_l_of_t l ->
+  t_LabelOf (erase_term l t5) = erase_term l (t_LabelOf t5).
+Definition erase_term_inv_t_Label : forall l t' t5, 
+  is_l_of_t l ->
+  t_Label t5 (erase_term l t') = erase_term l (t_Label t5 t').
+Definition erase_term_inv_t_UnLabel : forall l t5,
+  is_l_of_t l ->
+  t_UnLabel (erase_term l t5) = erase_term l (t_UnLabel t5).
+Definition erase_term_inv_t_ToLabeled :forall l t1 t2,
+  is_l_of_t l ->
+  t_ToLabeled t1 (erase_term l t2) = erase_term l (t_ToLabeled t1 t2).
+Definition erase_term_inv_t_MkToLabeledTCB : forall l l_5 c l1 t5,
+  is_l_of_t l ->
+  is_l_of_t l_5 ->
+  is_l_of_t c ->
+  is_l_of_t l1 ->
+  t_MkToLabeledTCB l_5 c l1 (erase_term l t5) = erase_term l (t_MkToLabeledTCB l_5 c l1 t5).
 
 (* ~>L *)
 Inductive pure_reduce_l : t -> t -> t -> Prop :=
@@ -461,27 +480,6 @@ Definition erase_config (l : t) (cfg : m) : m :=
                             then m_Config l1 c1 (erase_term l t1)
                             else m_Config l1 c1 t_VHole
   end.
-
-(* -->L *)
-Inductive lio_reduce_l : t -> m -> m -> Prop :=
-   | lio_reduce_l_step : forall l m1 m2,
-     is_l_of_t l ->
-     lio_reduce m1 m2 ->
-     lio_reduce_l l m1 m2.
-
-Lemma deterministic_lio_reduce_l : forall l x y1 y2,
-  lio_reduce_l l x y1 ->
-  lio_reduce_l l x y2 ->
-  y1 = y2.
-Proof.
-  intros l x y1 y2 Hy1 Hy2. 
-  generalize dependent y2.
-  induction Hy1; intros y2 Hy2.
-  inversion Hy2.
-  Case "assertion". apply deterministic_lio_reduce with (x := m1). assumption. assumption.
-Qed.
-
-Hint Resolve deterministic_lio_reduce_l.
 
 Lemma erase_term_idempotent : forall l t1,
   is_l_of_t l ->
@@ -641,6 +639,14 @@ Proof.
   intros. simpl. rewrite H1. simpl. reflexivity.
 Qed. 
 
+Lemma erase_label_id : forall l l2,
+  is_l_of_t l ->
+  is_l_of_t l2 ->
+  erase_term l l2 = l2.
+Proof.
+  intros.  induction l2; auto; inversion H0.
+Qed. 
+
 Lemma pure_reduce_simulation : forall l t1 t2,
   is_l_of_t l ->
   pure_reduce t1 t2 ->
@@ -651,31 +657,17 @@ Proof.
   term_cases (induction t1) Case; intros t2 H.
     Case "term_LBot". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_LA". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
+
     Case "term_LB". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_LTop". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VTrue". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VFalse". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
+
     Case "term_VUnit". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VAbs". inversion H. 
     Case "term_VFix". inversion H.
      SCase "fixCtx".
-     apply Pr_fixCtx in H1.
-     apply IHt1 in H1.
-     rewrite erase_term_idempotent with (t1 := t_VFix t').
-     rewrite erase_term_idempotent with (t1 := t_VFix t1).
-     assert (erase_term l (t_VFix t1) = (t_VFix (erase_term l t1))) as Hr.
-     SSCase "assert". trivial.
-     rewrite Hr.
-     apply pure_reduce_l_step. assumption.
-     apply IHt1 in H1.
-     inversion H1.
-     subst.
-     inversion H5.auto.
-
-apply Pr_fixCtx.
-     apply pure_reduce_l_step. assumption.
-     simpl.
-
+     admit.
      SCase "fix".
      rewrite erase_term_idempotent with (t1 := tsubst_t (t_VFix (t_VAbs x t5)) x t5).
      apply pure_reduce_l_step. assumption.
@@ -687,11 +679,7 @@ apply Pr_fixCtx.
     Case "term_Var". inversion H.
     Case "term_App".  inversion H.
      SCase "appCtx".
-     apply IHt1_1 in H3.
-     rewrite erase_term_idempotent with (t1 := t_App t1' t1_2).
-     apply pure_reduce_l_step. assumption.
-     simpl. apply Pr_appCtx.
-     apply pure_reduce_inv_simulation. assumption. assumption. assumption.
+     admit.
      SCase "app".  
      rewrite erase_term_idempotent with (t1 := tsubst_t t1_2 x t1).
      apply pure_reduce_l_step. assumption.
@@ -717,15 +705,57 @@ apply Pr_fixCtx.
     Case "term_Bind". inversion H. 
     Case "term_GetLabel". inversion H.
     Case "term_GetClearance". inversion H.
-    Case "term_LabelOf". admit.
+    Case "term_LabelOf". inversion H.
+     SCase "labelOfCtx".
+     admit.
+     SCase "labelOf". 
+     rewrite erase_term_idempotent with (t1 := t2).  
+     apply pure_reduce_l_step. assumption.
+     subst.
+     simpl. destruct (canFlowTo t2 l === Some true). 
+     SSCase "true".
+     assert (erase_term l t2 = t2) as Hrewrite.
+     SSSCase "assertion".
+     apply erase_label_id. assumption. assumption.
+     rewrite Hrewrite. apply Pr_labelOf. assumption.
+     SSCase "false".
+     assert (erase_term l t2 = t2) as Hrewrite.
+     SSSCase "assertion".
+     apply erase_label_id. assumption. assumption.
+     rewrite Hrewrite. apply Pr_labelOf. assumption.
+     assumption.
     Case "term_Label". inversion H.
     Case "term_UnLabel". inversion H.
     Case "term_ToLabeled". inversion H.
     Case "term_MkToLabeledTCB". inversion H.
 Qed.
 
+(* -->L *)
+Inductive lio_reduce_l : t -> m -> m -> Prop :=
+   | lio_reduce_l_step : forall l m1 m2,
+     is_l_of_t l ->
+     lio_reduce m1 m2 ->
+     lio_reduce_l l m1 m2.
+
+Lemma deterministic_lio_reduce_l : forall l x y1 y2,
+  lio_reduce_l l x y1 ->
+  lio_reduce_l l x y2 ->
+  y1 = y2.
+Proof.
+  intros l x y1 y2 Hy1 Hy2. 
+  generalize dependent y2.
+  induction Hy1; intros y2 Hy2.
+  inversion Hy2.
+  Case "assertion". apply deterministic_lio_reduce with (x := m1). assumption. assumption.
+Qed.
+
+Hint Resolve deterministic_lio_reduce_l.
+
+
+(*
 Lemma erase_config_idempotent : forall l m1,
   is_l_of_t l ->
   erase_config l m1 = erase_config l (erase_config l m1).
 Proof.
   Admitted.
+*)
