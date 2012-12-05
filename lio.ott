@@ -3,119 +3,112 @@ embed
 Require Import SfLib.
 }}
 
-metavar termvar, x ::=																	  {{ com term variable }} 
-  							 	 																				{{ tex \mathit{[[termvar]]} }}
-  																												{{ coq nat }} {{ coq-equality }}
+metavar termvar, x ::= {{ com term variable }} 
+    {{ tex \mathit{[[termvar]]} }}
+    {{ coq nat }} {{ coq-equality }}
 
-metavar typvar, X ::=																		  {{ com type variable }} 
-				  																								{{ tex \mathit{[[typvar]]} }}
-																													{{ coq nat }} {{ coq-equality }}
+metavar typvar, X ::= {{ com type variable }} 
+    {{ tex \mathit{[[typvar]]} }}
+    {{ coq nat }} {{ coq-equality }}
 
 grammar
 %{{{ LABELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	l, c :: 'l_' ::=																			  {{ com label }}
-	  | bot		              ::   :: LBot										{{ com bottom }} {{ tex \bot }}
-    | A										::   :: LA                      {{ com medium-label }} {{ tex l_[[A]] }}
-    | B										::   :: LB                      {{ com medium-label }} {{ tex l_[[B]] }}
-	  | top		              ::   :: LTop										{{ com top }} {{ tex \top }}
+l, c :: 'l_' ::= {{ com label }}
+    | bot                   ::   :: LBot         {{ com bottom }} {{ tex \bot }}
+    | A                     ::   :: LA           {{ com medium-label }} {{ tex l_[[A]] }}
+    | B                     ::   :: LB           {{ com medium-label }} {{ tex l_[[B]] }}
+    | top                   ::   :: LTop         {{ com top }} {{ tex \top }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %{{{ VALUES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  v :: 'v_' ::=                                           {{ com  value }}
+v :: 'v_' ::= {{ com  value }}
     % ----------------------------------------------------------------------------------------------
-	  | bot		              ::   :: LBot										{{ com bottom }} {{ tex \bot }}
-    | A										::   :: LA                      {{ com medium-label }} {{ tex l_[[A]] }}
-    | B										::   :: LB                      {{ com medium-label }} {{ tex l_[[B]] }}
-	  | top		              ::   :: LTop										{{ com top }} {{ tex \top }}
+    | bot                   ::   :: LBot         {{ com bottom }} {{ tex \bot }}
+    | A                     ::   :: LA           {{ com medium-label }} {{ tex l_[[A]] }}
+    | B                     ::   :: LB           {{ com medium-label }} {{ tex l_[[B]] }}
+    | top                   ::   :: LTop         {{ com top }} {{ tex \top }}
     % ----------------------------------------------------------------------------------------------
-    | true                ::   :: VTrue                   {{ com Boolean true }}
-    | false        			  ::   :: VFalse                  {{ com Boolean false }}
-    | ()           		  	::   :: VUnit                   {{ com unit value  }}
-    | \ x . t             ::   :: VAbs                    {{ com abstraction }}
-    | LIO t               ::   :: VLIO                    {{ com LIO value }}
-																													{{ tex ([[t]])^[[LIO]] }}
-    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
-    | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
+    | true                  ::   :: VTrue        {{ com Boolean true }}
+    | false                 ::   :: VFalse       {{ com Boolean false }}
+    | ()                    ::   :: VUnit        {{ com unit value  }}
+    | \ x . t               ::   :: VAbs         {{ com abstraction }}
+    | LIO t                 ::   :: VLIO         {{ com LIO value }} {{ tex ([[t]])^[[LIO]] }}
+    | Lb t1 t2              ::   :: VLabeled     {{ com labeled value }}
+    | hole                  ::   :: VHole        {{ com hole }} {{ tex \bullet }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %{{{ TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  t :: 't_' ::=                                           {{ com term }}
+t :: 't_' ::=  {{ com term }}
     % ----------------------------------------------------------------------------------------------
-	  | bot		              ::   :: LBot										{{ com bottom }} {{ tex \bot }}
-    | A										::   :: LA                      {{ com medium-label }} {{ tex l_[[A]] }}
-    | B										::   :: LB                      {{ com medium-label }} {{ tex l_[[B]] }}
-	  | top		              ::   :: LTop										{{ com top }} {{ tex \top }}
+    | bot                   ::   :: LBot         {{ com bottom }} {{ tex \bot }}
+    | A                     ::   :: LA           {{ com medium-label }} {{ tex l_[[A]] }}
+    | B                     ::   :: LB           {{ com medium-label }} {{ tex l_[[B]] }}
+    | top                   ::   :: LTop         {{ com top }} {{ tex \top }}
     % ----------------------------------------------------------------------------------------------
-    | true                ::   :: VTrue                   {{ com Boolean true }}
-    | false        			  ::   :: VFalse                  {{ com Boolean false }}
-    | ()           		  	::   :: VUnit                   {{ com unit value  }}
-    | \ x . t             ::   :: VAbs  (+ bind x in t +) {{ com abstraction }}      
-    | fix t               ::   :: VFix                    {{ com fixpoint }}
-    | LIO t               ::   :: VLIO                    {{ com LIO value }}
-																													{{ tex ([[t]])^[[LIO]] }}
-    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
-    | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
+    | true                  ::   :: VTrue        {{ com Boolean true }}
+    | false                 ::   :: VFalse       {{ com Boolean false }}
+    | ()                    ::   :: VUnit        {{ com unit value  }}
+    | \ x . t               ::   :: VAbs         {{ com abstraction }}
+    | LIO t                 ::   :: VLIO         {{ com LIO value }} {{ tex ([[t]])^[[LIO]] }}
+    | Lb t1 t2              ::   :: VLabeled     {{ com labeled value }}
+    | hole                  ::   :: VHole        {{ com hole }} {{ tex \bullet }}
     % ----------------------------------------------------------------------------------------------
-    | x                   ::   :: Var                     {{ com variable }}         
-    | t t'                ::   :: App                     {{ com application }}      
-    | if t1 then t2 else t3 :: :: IfEl                    {{ com conditional }}
-    | join t1 t2          ::   :: Join                    {{ com join }}
-					 										 														{{ tex [[t1]] \sqcup [[t2]]}}
-    | meet t1 t2          ::   :: Meet                    {{ com meet }}
-					 										 														{{ tex [[t1]] \sqcap [[t2]]}}
-    | canFlowTo t1 t2     ::   :: CanFlowTo               {{ com can-flow-to }} 
-									 						 														{{ tex [[t1]] \sqsubseteq [[t2]]}}
-    | return t            ::   :: Return                  {{ com return }}
-    | bind t t'           ::   :: Bind          					{{ com bind }}
-                                        									{{ tex [[t]] >\!\!>\!\!= [[t']] }}
-    | getLabel            ::   :: GetLabel      					{{ com get current label }}
-    | getClearance        ::   :: GetClearance  					{{ com get current clearance }}
-    | labelOf t           ::   :: LabelOf       					{{ com get label of value }}
-    | label t t'          ::   :: Label         					{{ com label }}
-    | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
-    | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
-    | mkToLabeledTCB t1 t2 t3 t4 ::   :: MkToLabeledTCB   {{ com trusted primitive that restores state }}
-    | ( t )               :: S :: paren   								{{ ich [[t]] }}
-    | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
+    | x                     ::   :: Var          {{ com variable }}         
+    | t t'                  ::   :: App          {{ com application }}      
+    | fix t                 ::   :: Fix          {{ com fixpoint }}
+    | if t1 then t2 else t3 ::   :: IfEl         {{ com conditional }}
+    | join t1 t2            ::   :: Join         {{ com join }} {{ tex [[t1]] \sqcup [[t2]]}}
+    | meet t1 t2            ::   :: Meet         {{ com meet }} {{ tex [[t1]] \sqcap [[t2]]}}
+    | canFlowTo t1 t2       ::   :: CanFlowTo    {{ com can-flow-to }} 
+                                                 {{ tex [[t1]] \sqsubseteq [[t2]]}}
+    | return t              ::   :: Return       {{ com return }}
+    | bind t t'             ::   :: Bind         {{ com bind }} {{ tex [[t]] >\!\!>\!\!= [[t']] }}
+    | getLabel              ::   :: GetLabel     {{ com get current label }}
+    | getClearance          ::   :: GetClearance {{ com get current clearance }}
+    | labelOf t             ::   :: LabelOf      {{ com get label of value }}
+    | label t t'            ::   :: Label        {{ com label }}
+    | unlabel t             ::   :: UnLabel      {{ com unlabel }}
+    | toLabeled t1 t2       ::   :: ToLabeled    {{ com execute sensitive computation }}
+    | mkToLabeledTCB t1 t2 t3 t4 ::   :: MkToLabeledTCB 
+                                                 {{ com trusted primitive that restores state }}
+    | ( t )                 :: S :: paren        {{ ich [[t]] }}
+    | { t / x } t'          :: M :: tsub         {{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  m ::  'm_' ::=																				  {{ com monadic LIO term }}
-	  | conf l c t				  ::    :: Config									{{ com configuration }}
-    			 									 												   {{ tex \langle [[l]], [[c]], [[t]] \rangle }}
+m ::  'm_' ::= {{ com monadic LIO term }}
+    | conf l c t            ::    :: Config      {{ com configuration }}
+                                                 {{ tex \langle [[l]], [[c]], [[t]] \rangle }}
 
 %{{{ TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  T {{ tex \tau }} :: T_ ::=                              {{ com type }}
-    | Bool                ::   :: TBool                   {{ com Boolean }}
-    | ()                  ::   :: TUnit                   {{ com unit }}
-    | Label               ::   :: TLabel                  {{ com label }} {{ tex \ell }}
-    | LIO T               ::   :: TLIO                    {{ com LIO action }} 
-															 														{{ tex [[LIO]] [[T]] }}
-    | Labeled T           ::   :: TLabeled                {{ com labeled value }}
-    | X                   ::   :: TVar                    {{ com variable }}
-    | T -> T'             ::   :: TArrow                  {{ com function }}
-    | ( T )               :: S :: paren 									{{ ich [[T]] }}
+T {{ tex \tau }} :: T_ ::= {{ com type }}
+    | Bool                  ::   :: TBool        {{ com Boolean }}
+    | ()                    ::   :: TUnit        {{ com unit }}
+    | Label                 ::   :: TLabel       {{ com label }} {{ tex \ell }}
+    | LIO T                 ::   :: TLIO         {{ com LIO action }} {{ tex [[LIO]] [[T]] }}
+    | Labeled T             ::   :: TLabeled     {{ com labeled value }}
+    | X                     ::   :: TVar         {{ com variable }}
+    | T -> T'               ::   :: TArrow       {{ com function }}
+    | ( T )                 :: S :: paren        {{ ich [[T]] }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  G {{ tex \Gamma }} :: G_ ::= 														{{ com type environment }}
-			 		 					 			 																{{ coq list (termvar*T) }}
-    | G_empty             ::   :: em 											{{ tex \emptyset }}
-															 														{{ coq G_nil }}
-    | G , x : T           ::   :: vn 											{{ coq (cons ([[x]],[[T]]) [[G]]) }}
+G {{ tex \Gamma }} :: G_ ::= {{ com type environment }} {{ coq list (termvar*T) }}
+    | G_empty               ::   :: em           {{ tex \emptyset }} {{ coq G_nil }}
+    | G , x : T             ::   :: vn           {{ coq (cons ([[x]],[[T]]) [[G]]) }}
 
-  terminals :: 'terminals_' ::=
-    | \                   ::   :: lambda								  {{ tex \lambda }}
-    | -->                 ::   :: lio_reduce   						{{ tex \longrightarrow }}
-    | ~>                  ::   :: pure_reduce  						{{ tex \leadsto }}
-    |  ->                 ::   :: arrow        						{{ tex \rightarrow }}
-    | |-                  ::   :: turnstile    						{{ tex \vdash }}
-    | in                  ::   :: in           						{{ tex \in }}
+terminals :: 'terminals_' ::=
+    | \                     ::   :: lambda       {{ tex \lambda }}
+    | -->                   ::   :: lio_reduce   {{ tex \longrightarrow }}
+    | ~>                    ::   :: pure_reduce  {{ tex \leadsto }}
+    |  ->                   ::   :: arrow        {{ tex \rightarrow }}
+    | |-                    ::   :: turnstile    {{ tex \vdash }}
+    | in                    ::   :: in           {{ tex \in }}
 
-  formula :: 'formula_' ::=          
-    | judgement           ::   :: judgement
-    | not ( formula )     ::   :: not										  {{ tex \neg ([[ formula]]) }}
-															 								 						{{ coq (not ([[formula]])) }}
-    | t = t'              ::   :: eqv  				 						{{ ich [[t]]=[[t']] }}
-    | x : T in G          ::   :: xTG 				 						{{ coq (bound [[x]] [[T]] [[G]])  }}
+formula :: 'formula_' ::=          
+    | judgement             ::   :: judgement
+    | not ( formula )       ::   :: not          {{ tex \neg ([[ formula]]) }}
+                                                 {{ coq (not ([[formula]])) }}
+    | t = t'                ::   :: eqv          {{ ich [[t]]=[[t']] }}
+    | x : T in G            ::   :: xTG          {{ coq (bound [[x]] [[T]] [[G]])  }}
 
 
 embed
@@ -152,29 +145,29 @@ defn
     ------------ :: unit
     G |- () : ()
 
-		---------------- :: labelBot
-		G |- bot : Label
+    ---------------- :: labelBot
+    G |- bot : Label
 
-		---------------- :: labelA
-		G |- A : Label
+    ---------------- :: labelA
+    G |- A : Label
 
-		---------------- :: labelB
-		G |- B : Label
+    ---------------- :: labelB
+    G |- B : Label
 
-		---------------- :: labelTop
-		G |- top : Label
+    ---------------- :: labelTop
+    G |- top : Label
 
     G |- t1 : Label
     G |- t2 : T2
     -------------------------- :: labeledVal
     G |- Lb t1 t2 : Labeled T2
  
-	  G |- t : T
-		------------------ :: lioVal
-		G |- LIO t : LIO T
-		
-		------------- :: hole
-		G |- hole : T
+    G |- t : T
+    ------------------ :: lioVal
+    G |- LIO t : LIO T
+    
+    ------------- :: hole
+    G |- hole : T
 
     x : T in G
     ---------- :: valName
@@ -199,19 +192,19 @@ defn
     ------------------------------ :: ifEl
     G |- if t1 then t2 else t3 : T
 
-		G |- t2 : Label
-		----------------------- :: join
-		G |- join t1 t2 : Label
+    G |- t2 : Label
+    ----------------------- :: join
+    G |- join t1 t2 : Label
 
-		G |- t1 : Label
-		G |- t2 : Label
-		----------------------- :: meet
-		G |- meet t1 t2 : Label
+    G |- t1 : Label
+    G |- t2 : Label
+    ----------------------- :: meet
+    G |- meet t1 t2 : Label
 
-		G |- t1 : Label
-		G |- t2 : Label
-		--------------------------- :: canFlowTo
-		G |- canFlowTo t1 t2 : Bool
+    G |- t1 : Label
+    G |- t2 : Label
+    --------------------------- :: canFlowTo
+    G |- canFlowTo t1 t2 : Bool
 
     G |- t : T
     --------------------- :: return
@@ -266,7 +259,7 @@ defns
     -----------------------  :: app
     (\x.t1) t2 ~>  {t2/x}t1
 
-		t ~> t'
+    t ~> t'
     --------------- :: fixCtx
     fix t ~> fix t'
 
@@ -283,99 +276,99 @@ defns
     ------------------------------  :: ifFalse
     if false then t2 else t3 ~> t3
 
-		t1 ~> t1'
-		------------------------- :: joinCtxL
-		join t1 t2 ~> join t1' t2
-
-		t2 ~> t2'
-		------------------------- :: joinCtxR
-		join l1 t2 ~> join l1 t2'
-
-		not (l = bot)
-		--------------- :: joinBotL
-		join bot l ~> l
-
-		not (l = bot)
-		--------------- :: joinBotR
-		join l bot ~> l
-
-		l1 = l2
-		---------------- :: joinEq
-		join l1 l2 ~> l1
-
-		--------------- :: joinAB
-		join A B ~> top
-
-		--------------- :: joinBA
-		join B A ~> top
-
-		not (l = top)
-		----------------- :: joinTopL
-		join top l ~> top
-
-		not (l = top)
-		----------------- :: joinTopR
-		join l top ~> top
-
-		t1 ~> t1'
-		------------------------- :: meetCtxL
-		meet t1 t2 ~> meet t1' t2
-
-		t2 ~> t2'
-		------------------------- :: meetCtxR
-		meet l1 t2 ~> meet l1 t2'
-
-		not (l = bot)
-		----------------- :: meetBotL
-		meet bot l ~> bot
-
-		not (l = bot)
-		----------------- :: meetBotR
-		meet l bot ~> bot
-
-		l1 = l2
-		---------------- :: meetEq
-		meet l1 l2 ~> l1
-
-		--------------- :: meetAB
-		meet A B ~> bot
-
-		--------------- :: meetBA
-		meet B A ~> bot
-
-		not (l = top)
-		--------------- :: meetTopL
-		meet top l ~> l
-
-		not (l = top)
-		--------------- :: meetTopR
-		meet l top ~> l
-
-		t1 ~> t1'
-		----------------------------------- :: canFlowToCtxL
-		canFlowTo t1 t2 ~> canFlowTo t1' t2
-
-		t2 ~> t2'
-		----------------------------------- :: canFlowToCtxR
-		canFlowTo l1 t2 ~> canFlowTo l1 t2'
-
-		not (l = bot)
-		----------------------- :: canFlowToBot
-		canFlowTo bot l ~> true
-
-		l1 = l2
-		----------------------- :: canFlowToEq
-		canFlowTo l1 l2 ~> true
-
-		---------------------- :: canFlowToAB
-		canFlowTo A B ~> false
-
-		---------------------- :: canFlowToBA
-		canFlowTo B A ~> false
-
-		not (l = top)
-		----------------------- :: canFlowToTop
-		canFlowTo l top ~> true
+    t1 ~> t1'
+    ------------------------- :: joinCtxL
+    join t1 t2 ~> join t1' t2
+    
+    t2 ~> t2'
+    ------------------------- :: joinCtxR
+    join l1 t2 ~> join l1 t2'
+    
+    not (l = bot)
+    --------------- :: joinBotL
+    join bot l ~> l
+    
+    not (l = bot)
+    --------------- :: joinBotR
+    join l bot ~> l
+    
+    l1 = l2
+    ---------------- :: joinEq
+    join l1 l2 ~> l1
+    
+    --------------- :: joinAB
+    join A B ~> top
+    
+    --------------- :: joinBA
+    join B A ~> top
+    
+    not (l = top)
+    ----------------- :: joinTopL
+    join top l ~> top
+    
+    not (l = top)
+    ----------------- :: joinTopR
+    join l top ~> top
+    
+    t1 ~> t1'
+    ------------------------- :: meetCtxL
+    meet t1 t2 ~> meet t1' t2
+    
+    t2 ~> t2'
+    ------------------------- :: meetCtxR
+    meet l1 t2 ~> meet l1 t2'
+    
+    not (l = bot)
+    ----------------- :: meetBotL
+    meet bot l ~> bot
+    
+    not (l = bot)
+    ----------------- :: meetBotR
+    meet l bot ~> bot
+    
+    l1 = l2
+    ---------------- :: meetEq
+    meet l1 l2 ~> l1
+    
+    --------------- :: meetAB
+    meet A B ~> bot
+    
+    --------------- :: meetBA
+    meet B A ~> bot
+    
+    not (l = top)
+    --------------- :: meetTopL
+    meet top l ~> l
+    
+    not (l = top)
+    --------------- :: meetTopR
+    meet l top ~> l
+    
+    t1 ~> t1'
+    ----------------------------------- :: canFlowToCtxL
+    canFlowTo t1 t2 ~> canFlowTo t1' t2
+    
+    t2 ~> t2'
+    ----------------------------------- :: canFlowToCtxR
+    canFlowTo l1 t2 ~> canFlowTo l1 t2'
+    
+    not (l = bot)
+    ----------------------- :: canFlowToBot
+    canFlowTo bot l ~> true
+    
+    l1 = l2
+    ----------------------- :: canFlowToEq
+    canFlowTo l1 l2 ~> true
+    
+    ---------------------- :: canFlowToAB
+    canFlowTo A B ~> false
+    
+    ---------------------- :: canFlowToBA
+    canFlowTo B A ~> false
+    
+    not (l = top)
+    ----------------------- :: canFlowToTop
+    canFlowTo l top ~> true
 
     t ~> t'
     ----------------------- :: labelOfCtx
@@ -439,14 +432,14 @@ embed
 Hint Constructors pure_reduce lio_reduce GtT : rules.
 
 Tactic Notation "label_cases" tactic(first) ident(c) :=
-	first;
+  first;
   [ Case_aux c "label_LBot"
   | Case_aux c "label_LA"
   | Case_aux c "label_LB"
   | Case_aux c "label_LTop" ].
 
 Tactic Notation "value_cases" tactic(first) ident(c) :=
-	first;
+  first;
   [ Case_aux c "value_LBot"
   | Case_aux c "value_LA"
   | Case_aux c "value_LB"
@@ -455,13 +448,12 @@ Tactic Notation "value_cases" tactic(first) ident(c) :=
   | Case_aux c "value_VFalse"
   | Case_aux c "value_VUnit"
   | Case_aux c "value_VAbs"
-  | Case_aux c "value_VFix"
   | Case_aux c "value_VLIO"
   | Case_aux c "value_VLabeled"
   | Case_aux c "value_VHole" ].
 
 Tactic Notation "term_cases" tactic(first) ident(c) :=
-	first;
+  first;
   [ Case_aux c "term_LBot"
   | Case_aux c "term_LA"
   | Case_aux c "term_LB"
@@ -470,12 +462,12 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_VFalse"
   | Case_aux c "term_VUnit"
   | Case_aux c "term_VAbs"
-  | Case_aux c "term_VFix"
   | Case_aux c "term_VLIO"
   | Case_aux c "term_VLabeled"
   | Case_aux c "term_VHole"
   | Case_aux c "term_Var"
   | Case_aux c "term_App"
+  | Case_aux c "term_Fix"
   | Case_aux c "term_IfEl"
   | Case_aux c "term_Join"
   | Case_aux c "term_Meet"
@@ -491,32 +483,32 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_MkToLabeledTCB" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
- first;
- [ Case_aux c "GtT_true"
- | Case_aux c "GtT_false"
- | Case_aux c "GtT_unit"
- | Case_aux c "GtT_labelBot"
- | Case_aux c "GtT_labelA"
- | Case_aux c "GtT_labelB"
- | Case_aux c "GtT_labelTop"
- | Case_aux c "GtT_labeledVal"
- | Case_aux c "GtT_lioVal"
- | Case_aux c "GtT_hole"
- | Case_aux c "GtT_valName"
- | Case_aux c "GtT_abs"
- | Case_aux c "GtT_fix"
- | Case_aux c "GtT_app"
- | Case_aux c "GtT_ifEl"
- | Case_aux c "GtT_join"
- | Case_aux c "GtT_meet"
- | Case_aux c "GtT_canFlowTo"
- | Case_aux c "GtT_return"
- | Case_aux c "GtT_bind"
- | Case_aux c "GtT_getLabel"
- | Case_aux c "GtT_getClearance"
- | Case_aux c "GtT_labelOf"
- | Case_aux c "GtT_label"
- | Case_aux c "GtT_unlabel" ].
+  first;
+  [ Case_aux c "GtT_true"
+  | Case_aux c "GtT_false"
+  | Case_aux c "GtT_unit"
+  | Case_aux c "GtT_labelBot"
+  | Case_aux c "GtT_labelA"
+  | Case_aux c "GtT_labelB"
+  | Case_aux c "GtT_labelTop"
+  | Case_aux c "GtT_labeledVal"
+  | Case_aux c "GtT_lioVal"
+  | Case_aux c "GtT_hole"
+  | Case_aux c "GtT_valName"
+  | Case_aux c "GtT_abs"
+  | Case_aux c "GtT_fix"
+  | Case_aux c "GtT_app"
+  | Case_aux c "GtT_ifEl"
+  | Case_aux c "GtT_join"
+  | Case_aux c "GtT_meet"
+  | Case_aux c "GtT_canFlowTo"
+  | Case_aux c "GtT_return"
+  | Case_aux c "GtT_bind"
+  | Case_aux c "GtT_getLabel"
+  | Case_aux c "GtT_getClearance"
+  | Case_aux c "GtT_labelOf"
+  | Case_aux c "GtT_label"
+  | Case_aux c "GtT_unlabel" ].
 
 Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   first;

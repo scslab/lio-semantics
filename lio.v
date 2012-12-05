@@ -38,12 +38,12 @@ Inductive t : Set :=  (*r term *)
  | t_VFalse : t (*r Boolean false *)
  | t_VUnit : t (*r unit value *)
  | t_VAbs (x:termvar) (t5:t) (*r abstraction *)
- | t_VFix (t5:t) (*r fixpoint *)
  | t_VLIO (t5:t) (*r LIO value *)
  | t_VLabeled (t1:t) (t2:t) (*r labeled value *)
  | t_VHole : t (*r hole *)
  | t_Var (x:termvar) (*r variable *)
  | t_App (t5:t) (t':t) (*r application *)
+ | t_Fix (t5:t) (*r fixpoint *)
  | t_IfEl (t1:t) (t2:t) (t3:t) (*r conditional *)
  | t_Join (t1:t) (t2:t) (*r join *)
  | t_Meet (t1:t) (t2:t) (*r meet *)
@@ -80,12 +80,12 @@ Definition is_l_of_t (t_6:t) : Prop :=
   | t_VFalse => False
   | t_VUnit => False
   | (t_VAbs x t5) => False
-  | (t_VFix t5) => False
   | (t_VLIO t5) => False
   | (t_VLabeled t1 t2) => False
   | t_VHole => False
   | (t_Var x) => False
   | (t_App t5 t') => False
+  | (t_Fix t5) => False
   | (t_IfEl t1 t2 t3) => False
   | (t_Join t1 t2) => False
   | (t_Meet t1 t2) => False
@@ -116,12 +116,12 @@ Definition is_v_of_t (t_6:t) : Prop :=
   | t_VFalse => (True)
   | t_VUnit => (True)
   | (t_VAbs x t5) => (True)
-  | (t_VFix t5) => False
   | (t_VLIO t5) => (True)
   | (t_VLabeled t1 t2) => (True)
   | t_VHole => (True)
   | (t_Var x) => False
   | (t_App t5 t') => False
+  | (t_Fix t5) => False
   | (t_IfEl t1 t2 t3) => False
   | (t_Join t1 t2) => False
   | (t_Meet t1 t2) => False
@@ -137,21 +137,6 @@ Definition is_v_of_t (t_6:t) : Prop :=
   | (t_MkToLabeledTCB t1 t2 t3 t4) => False
 end.
 
-(** library functions *)
-Fixpoint list_mem A (eq:forall a b:A,{a=b}+{a<>b}) (x:A) (l:list A) {struct l} : bool :=
-  match l with
-  | nil => false
-  | cons h t => if eq h x then true else list_mem A eq x t
-end.
-Implicit Arguments list_mem.
-
-Fixpoint list_minus A (eq:forall a b:A,{a=b}+{a<>b}) (l1:list A) (l2:list A) {struct l1} : list A :=
-  match l1 with
-  | nil => nil
-  | cons h t => if (list_mem (A:=A) eq h l2) then list_minus A eq t l2 else cons h (list_minus A eq t l2)
-end.
-Implicit Arguments list_minus.
-
 
 (** free variables *)
 Fixpoint fv_t (t_6:t) : list termvar :=
@@ -163,13 +148,13 @@ Fixpoint fv_t (t_6:t) : list termvar :=
   | t_VTrue => nil
   | t_VFalse => nil
   | t_VUnit => nil
-  | (t_VAbs x t5) => ((list_minus eq_termvar (fv_t t5) (cons x nil)))
-  | (t_VFix t5) => ((fv_t t5))
+  | (t_VAbs x t5) => ((fv_t t5))
   | (t_VLIO t5) => ((fv_t t5))
   | (t_VLabeled t1 t2) => (app (fv_t t1) (fv_t t2))
   | t_VHole => nil
   | (t_Var x) => (cons x nil)
   | (t_App t5 t') => (app (fv_t t5) (fv_t t'))
+  | (t_Fix t5) => ((fv_t t5))
   | (t_IfEl t1 t2 t3) => (app (fv_t t1) (app (fv_t t2) (fv_t t3)))
   | (t_Join t1 t2) => (app (fv_t t1) (fv_t t2))
   | (t_Meet t1 t2) => (app (fv_t t1) (fv_t t2))
@@ -201,13 +186,13 @@ Fixpoint tsubst_t (t_6:t) (x5:termvar) (t__7:t) {struct t__7} : t :=
   | t_VTrue => t_VTrue 
   | t_VFalse => t_VFalse 
   | t_VUnit => t_VUnit 
-  | (t_VAbs x t5) => t_VAbs x (if list_mem eq_termvar x5 (cons x nil) then t5 else (tsubst_t t_6 x5 t5))
-  | (t_VFix t5) => t_VFix (tsubst_t t_6 x5 t5)
+  | (t_VAbs x t5) => t_VAbs x (tsubst_t t_6 x5 t5)
   | (t_VLIO t5) => t_VLIO (tsubst_t t_6 x5 t5)
   | (t_VLabeled t1 t2) => t_VLabeled (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2)
   | t_VHole => t_VHole 
   | (t_Var x) => (if eq_termvar x x5 then t_6 else (t_Var x))
   | (t_App t5 t') => t_App (tsubst_t t_6 x5 t5) (tsubst_t t_6 x5 t')
+  | (t_Fix t5) => t_Fix (tsubst_t t_6 x5 t5)
   | (t_IfEl t1 t2 t3) => t_IfEl (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2) (tsubst_t t_6 x5 t3)
   | (t_Join t1 t2) => t_Join (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2)
   | (t_Meet t1 t2) => t_Meet (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2)
@@ -267,7 +252,7 @@ Inductive GtT : G -> t -> T -> Prop :=    (* defn GtT *)
      GtT G5 (t_App t_5 t1) T2
  | GtT_fix : forall (G5:G) (t5:t) (T5:T),
      GtT G5 t5 (T_TArrow T5 T5) ->
-     GtT G5 (t_VFix t5) T5
+     GtT G5 (t_Fix t5) T5
  | GtT_ifEl : forall (G5:G) (t1 t2 t3:t) (T5:T),
      GtT G5 t1 T_TBool ->
      GtT G5 t2 T5 ->
@@ -326,9 +311,9 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
      pure_reduce (t_App  (t_VAbs x t1)  t2)  ( tsubst_t  t2   x   t1  ) 
  | Pr_fixCtx : forall (t5 t':t),
      pure_reduce t5 t' ->
-     pure_reduce (t_VFix t5) (t_VFix t')
+     pure_reduce (t_Fix t5) (t_Fix t')
  | Pr_fix : forall (x:termvar) (t5:t),
-     pure_reduce (t_VFix  (t_VAbs x t5) )  ( tsubst_t   (t_VFix  (t_VAbs x t5) )    x   t5  ) 
+     pure_reduce (t_Fix  (t_VAbs x t5) )  ( tsubst_t   (t_Fix  (t_VAbs x t5) )    x   t5  ) 
  | Pr_ifCtx : forall (t1 t2 t3 t1':t),
      pure_reduce t1 t1' ->
      pure_reduce (t_IfEl t1 t2 t3) (t_IfEl t1' t2 t3)
@@ -500,14 +485,14 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
 Hint Constructors pure_reduce lio_reduce GtT : rules.
 
 Tactic Notation "label_cases" tactic(first) ident(c) :=
-	first;
+  first;
   [ Case_aux c "label_LBot"
   | Case_aux c "label_LA"
   | Case_aux c "label_LB"
   | Case_aux c "label_LTop" ].
 
 Tactic Notation "value_cases" tactic(first) ident(c) :=
-	first;
+  first;
   [ Case_aux c "value_LBot"
   | Case_aux c "value_LA"
   | Case_aux c "value_LB"
@@ -516,13 +501,12 @@ Tactic Notation "value_cases" tactic(first) ident(c) :=
   | Case_aux c "value_VFalse"
   | Case_aux c "value_VUnit"
   | Case_aux c "value_VAbs"
-  | Case_aux c "value_VFix"
   | Case_aux c "value_VLIO"
   | Case_aux c "value_VLabeled"
   | Case_aux c "value_VHole" ].
 
 Tactic Notation "term_cases" tactic(first) ident(c) :=
-	first;
+  first;
   [ Case_aux c "term_LBot"
   | Case_aux c "term_LA"
   | Case_aux c "term_LB"
@@ -531,12 +515,12 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_VFalse"
   | Case_aux c "term_VUnit"
   | Case_aux c "term_VAbs"
-  | Case_aux c "term_VFix"
   | Case_aux c "term_VLIO"
   | Case_aux c "term_VLabeled"
   | Case_aux c "term_VHole"
   | Case_aux c "term_Var"
   | Case_aux c "term_App"
+  | Case_aux c "term_Fix"
   | Case_aux c "term_IfEl"
   | Case_aux c "term_Join"
   | Case_aux c "term_Meet"
@@ -552,32 +536,32 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_MkToLabeledTCB" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
- first;
- [ Case_aux c "GtT_true"
- | Case_aux c "GtT_false"
- | Case_aux c "GtT_unit"
- | Case_aux c "GtT_labelBot"
- | Case_aux c "GtT_labelA"
- | Case_aux c "GtT_labelB"
- | Case_aux c "GtT_labelTop"
- | Case_aux c "GtT_labeledVal"
- | Case_aux c "GtT_lioVal"
- | Case_aux c "GtT_hole"
- | Case_aux c "GtT_valName"
- | Case_aux c "GtT_abs"
- | Case_aux c "GtT_fix"
- | Case_aux c "GtT_app"
- | Case_aux c "GtT_ifEl"
- | Case_aux c "GtT_join"
- | Case_aux c "GtT_meet"
- | Case_aux c "GtT_canFlowTo"
- | Case_aux c "GtT_return"
- | Case_aux c "GtT_bind"
- | Case_aux c "GtT_getLabel"
- | Case_aux c "GtT_getClearance"
- | Case_aux c "GtT_labelOf"
- | Case_aux c "GtT_label"
- | Case_aux c "GtT_unlabel" ].
+  first;
+  [ Case_aux c "GtT_true"
+  | Case_aux c "GtT_false"
+  | Case_aux c "GtT_unit"
+  | Case_aux c "GtT_labelBot"
+  | Case_aux c "GtT_labelA"
+  | Case_aux c "GtT_labelB"
+  | Case_aux c "GtT_labelTop"
+  | Case_aux c "GtT_labeledVal"
+  | Case_aux c "GtT_lioVal"
+  | Case_aux c "GtT_hole"
+  | Case_aux c "GtT_valName"
+  | Case_aux c "GtT_abs"
+  | Case_aux c "GtT_fix"
+  | Case_aux c "GtT_app"
+  | Case_aux c "GtT_ifEl"
+  | Case_aux c "GtT_join"
+  | Case_aux c "GtT_meet"
+  | Case_aux c "GtT_canFlowTo"
+  | Case_aux c "GtT_return"
+  | Case_aux c "GtT_bind"
+  | Case_aux c "GtT_getLabel"
+  | Case_aux c "GtT_getClearance"
+  | Case_aux c "GtT_labelOf"
+  | Case_aux c "GtT_label"
+  | Case_aux c "GtT_unlabel" ].
 
 Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   first;

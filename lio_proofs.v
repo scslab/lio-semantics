@@ -281,7 +281,7 @@ Proof.
   Case "LIO_label".
     inversion Hy2.
     subst. 
-    apply labels_cannot_be_reduced in H. solve by inversion. assumption.
+    apply labels_cannot_be_reduced in H11. solve by inversion. assumption.
     reflexivity.
   Case "LIO_unlabelCtx".
     inversion Hy2.
@@ -290,11 +290,11 @@ Proof.
     SCase "assertion". apply  deterministic_pure_reduce with (x := t5). assumption. assumption.
     subst t'0. reflexivity.
     subst. 
-    apply values_cannot_be_reduced in H0. solve by inversion. trivial.
+    apply values_cannot_be_reduced in H0. solve by inversion. simpl. trivial.
  Case "LIO_unlabel".
     inversion Hy2.
     subst.
-    apply values_cannot_be_reduced in H12. solve by inversion. trivial.
+    apply values_cannot_be_reduced in H12. solve by inversion. simpl. trivial.
     subst.
     assert (l2 = l3).
     SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
@@ -377,14 +377,14 @@ Fixpoint erase_term (l term : t) : t :=
    | t_VFalse          => t_VFalse
    | t_VUnit           => t_VUnit
    | t_VAbs x t5       => t_VAbs x (erase_term l t5)
-   | t_VFix t5         => t_VFix (erase_term l t5)
-   | t_VLIO t5         => t_VFix (erase_term l t5)
+   | t_VLIO t5         => t_VLIO (erase_term l t5)
    | t_VLabeled l1 t2  => t_VLabeled l1 (if canFlowTo l1 l === Some true
                                            then erase_term l t2
                                            else t_VHole)
    | t_VHole           => t_VHole
    | t_Var x           => t_Var x
    | t_App t5 t'       => t_App (erase_term l t5) (erase_term l t')
+   | t_Fix t5          => t_Fix (erase_term l t5)
    | t_IfEl t1 t2 t3   => t_IfEl t1 (erase_term l t2) (erase_term l t3)
    | t_Join t1 t2      => t_Join t1 t2
    | t_Meet t1 t2      => t_Meet t1 t2
@@ -403,9 +403,6 @@ Fixpoint erase_term (l term : t) : t :=
 Definition erase_term_inv_t_VAbs : forall l x t5,
   is_l_of_t l ->
   t_VAbs x (erase_term l t5) = erase_term l (t_VAbs x t5).
-Definition erase_term_inv_t_VFix : forall l t5,
-  is_l_of_t l ->
-  t_VFix (erase_term l t5) = erase_term l (t_VFix t5).
 Definition erase_term_inv_t_VLIO : forall l t5,
   is_l_of_t l ->
   t_VLIO (erase_term l t5) = erase_term l (t_VLIO t5).
@@ -423,6 +420,9 @@ Definition erase_term_inv_t_VHole : forall l,
 Definition erase_term_inv_t_App : forall l t5 t',
   is_l_of_t l ->
   t_App (erase_term l t5) (erase_term l t') = erase_term l (t_App t5 t').
+Definition erase_term_inv_t_VFix : forall l t5,
+  is_l_of_t l ->
+  t_Fix (erase_term l t5) = erase_term l (t_Fix t5).
 Definition erase_term_inv_t_IfEl : forall l t1 t2 t3,
   is_l_of_t l ->
   t_IfEl t1 (erase_term l t2) (erase_term l t3) = erase_term l (t_IfEl t1 t2 t3).
@@ -488,7 +488,6 @@ Proof.
   intros l t1 H.
   term_cases (induction t1) Case; eauto.
   Case "term_VAbs". simpl. rewrite <- IHt1. reflexivity.
-  Case "term_VFix". simpl. rewrite <- IHt1. reflexivity.
   Case "term_VLIO". simpl. rewrite <- IHt1. reflexivity.
   Case "term_VLabeled". induction l; try contradiction.
     SCase "LBot". simpl.
@@ -600,6 +599,7 @@ Proof.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
   Case "term_App". simpl. rewrite <- IHt1_1. rewrite <- IHt1_2. reflexivity.
+  Case "term_Fix". simpl. rewrite <- IHt1. reflexivity.
   Case "term_IfEl". simpl. rewrite <- IHt1_2. rewrite <- IHt1_3. reflexivity.
   Case "term_Return". simpl. rewrite <- IHt1. reflexivity.
   Case "term_Bind". simpl. rewrite <- IHt1_1. rewrite <- IHt1_2. reflexivity.
@@ -647,6 +647,123 @@ Proof.
   intros.  induction l2; auto; inversion H0.
 Qed. 
 
+Lemma pure_reduce_simulation_helper : forall l t1 t2,
+  is_l_of_t l ->
+  pure_reduce t1 t2 ->
+  pure_reduce (erase_term l t1) (erase_term l t2).
+Proof.
+  intros l t1 t2 l_of_t H.
+  generalize dependent t2.
+  term_cases (induction t1) Case; intros t2 H.
+    Case "term_LBot". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
+    Case "term_LA". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
+
+    Case "term_LB". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
+    Case "term_LTop". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
+    Case "term_VTrue". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
+    Case "term_VFalse". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
+
+    Case "term_VUnit". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
+    Case "term_VAbs". inversion H. 
+    Case "term_VLIO". inversion H.
+    Case "term_VLabeled". inversion H.
+    Case "term_VHole". inversion H.
+    Case "term_Var". inversion H.
+    Case "term_App".  inversion H.
+     SCase "appCtx".  
+     rewrite <- H1 in H.
+     apply IHt1_1 in H3.
+     simpl. apply Pr_appCtx. assumption.
+     SCase "app".  
+     simpl. rewrite erase_term_homo_subst.
+     apply Pr_app. assumption. 
+    Case "term_Fix". inversion H.
+     SCase "fixCtx".
+     rewrite <- H2 in H.
+     apply IHt1 in H1.
+     simpl. apply Pr_fixCtx. assumption.
+     SCase "fix".
+     simpl. rewrite erase_term_homo_subst.
+     apply Pr_fix. assumption. 
+    Case "term_IfEl". inversion H.
+     SCase "ifCtx".
+     simpl. apply Pr_ifCtx. assumption. 
+     SCase "ifTrue".
+     simpl. apply Pr_ifTrue. 
+     SCase "ifFalse".
+     simpl. apply Pr_ifFalse. 
+    Case "term_Join". inversion H. 
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. 
+      assert (erase_term l t2 = t2) as Hrwrite. 
+      SCase "assertion". apply erase_label_id. assumption. assumption.
+      rewrite Hrwrite. assumption.
+      simpl. subst. 
+      assert (erase_term l t2 = t2) as Hrwrite. 
+      SCase "assertion". apply erase_label_id. assumption. assumption.
+      rewrite Hrwrite. assumption.
+      simpl. subst. 
+      assert (erase_term l t1_2 = t1_2) as Hrwrite. 
+      SCase "assertion". apply erase_label_id. assumption. assumption.
+      rewrite Hrwrite. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+    Case "term_Meet". inversion H.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. 
+      assert (erase_term l t1_2 = t1_2) as Hrwrite. 
+      SCase "assertion". apply erase_label_id. assumption. assumption.
+      rewrite Hrwrite. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst.
+      assert (erase_term l t2 = t2) as Hrwrite. 
+      SCase "assertion". apply erase_label_id. assumption. assumption.
+      rewrite Hrwrite. assumption.
+      simpl. subst.
+      assert (erase_term l t2 = t2) as Hrwrite. 
+      SCase "assertion". apply erase_label_id. assumption. assumption.
+      rewrite Hrwrite. assumption.
+    Case "term_CanFlowTo". inversion H.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+      simpl. subst. assumption.
+    Case "term_Return". inversion H.
+    Case "term_Bind". inversion H. 
+    Case "term_GetLabel". inversion H.
+    Case "term_GetClearance". inversion H.
+    Case "term_LabelOf". inversion H.
+     SCase "labelOfCtx".
+     simpl. apply Pr_labelOfCtx. 
+     apply IHt1 in H1. assumption.
+     SCase "labelOf". 
+     simpl. destruct (canFlowTo t2 l === Some true). 
+     SSCase "true".
+     assert (erase_term l t2 = t2) as Hrewrite.
+     SSSCase "assertion".
+     apply erase_label_id. assumption. assumption.
+     rewrite Hrewrite. apply Pr_labelOf. assumption.
+     SSCase "false".
+     assert (erase_term l t2 = t2) as Hrewrite.
+     SSSCase "assertion".
+     apply erase_label_id. assumption. assumption.
+     rewrite Hrewrite. apply Pr_labelOf. assumption.
+    Case "term_Label". inversion H.
+    Case "term_UnLabel". inversion H.
+    Case "term_ToLabeled". inversion H.
+    Case "term_MkToLabeledTCB". inversion H.
+Qed.
+
 Lemma pure_reduce_simulation : forall l t1 t2,
   is_l_of_t l ->
   pure_reduce t1 t2 ->
@@ -665,26 +782,34 @@ Proof.
 
     Case "term_VUnit". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VAbs". inversion H. 
-    Case "term_VFix". inversion H.
-     SCase "fixCtx".
-     admit.
-     SCase "fix".
-     rewrite erase_term_idempotent with (t1 := tsubst_t (t_VFix (t_VAbs x t5)) x t5).
-     apply pure_reduce_l_step. assumption.
-     simpl. rewrite erase_term_homo_subst.
-     apply Pr_fix. assumption. assumption.
     Case "term_VLIO". inversion H.
     Case "term_VLabeled". inversion H.
     Case "term_VHole". inversion H.
     Case "term_Var". inversion H.
     Case "term_App".  inversion H.
      SCase "appCtx".
-     admit.
+     rewrite erase_term_idempotent with (t1 := t_App t1' t1_2).
+     apply pure_reduce_l_step. assumption.
+     simpl. 
+     apply Pr_appCtx. 
+     apply pure_reduce_simulation_helper. assumption. assumption. assumption.
      SCase "app".  
      rewrite erase_term_idempotent with (t1 := tsubst_t t1_2 x t1).
      apply pure_reduce_l_step. assumption.
      simpl. rewrite erase_term_homo_subst.
      apply Pr_app. assumption. assumption.
+    Case "term_Fix". inversion H.
+     SCase "fixCtx".
+     rewrite erase_term_idempotent with (t1 := t_Fix t').
+     apply pure_reduce_l_step. assumption.
+     simpl. 
+     apply Pr_fixCtx. 
+     apply pure_reduce_simulation_helper. assumption. assumption. assumption.
+     SCase "fix".
+     rewrite erase_term_idempotent with (t1 := tsubst_t (t_Fix (t_VAbs x t5)) x t5).
+     apply pure_reduce_l_step. assumption.
+     simpl. rewrite erase_term_homo_subst.
+     apply Pr_fix. assumption. assumption.
     Case "term_IfEl". inversion H.
      SCase "ifCtx".
      rewrite erase_term_idempotent with (t1 := t_IfEl t1' t1_2 t1_3).  
@@ -707,7 +832,11 @@ Proof.
     Case "term_GetClearance". inversion H.
     Case "term_LabelOf". inversion H.
      SCase "labelOfCtx".
-     admit.
+     rewrite erase_term_idempotent with (t1 := t_LabelOf t').
+     apply pure_reduce_l_step. assumption.
+     simpl. 
+     apply Pr_labelOfCtx. 
+     apply pure_reduce_simulation_helper. assumption. assumption. assumption.
      SCase "labelOf". 
      rewrite erase_term_idempotent with (t1 := t2).  
      apply pure_reduce_l_step. assumption.
