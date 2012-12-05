@@ -34,7 +34,7 @@ grammar
     | \ x . t             ::   :: VAbs                    {{ com abstraction }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
-    | Lb l1 t2            ::   :: VLabeled                {{ com labeled value }}
+    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
     | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -53,7 +53,7 @@ grammar
     | fix t               ::   :: VFix                    {{ com fixpoint }}
     | LIO t               ::   :: VLIO                    {{ com LIO value }}
 																													{{ tex ([[t]])^[[LIO]] }}
-    | Lb l1 t2            ::   :: VLabeled                {{ com labeled value }}
+    | Lb t1 t2            ::   :: VLabeled                {{ com labeled value }}
     | hole                ::   :: VHole                   {{ com hole }} {{ tex \bullet }}
     % ----------------------------------------------------------------------------------------------
     | x                   ::   :: Var                     {{ com variable }}         
@@ -74,7 +74,7 @@ grammar
     | label t t'          ::   :: Label         					{{ com label }}
     | unlabel t           ::   :: UnLabel       					{{ com unlabel }}
     | toLabeled t1 t2     ::   :: ToLabeled               {{ com execute sensitive computation }}
-    | mkToLabeledTCB l c l1 t ::   :: MkToLabeledTCB      {{ com trusted primitive that restores state }}
+    | mkToLabeledTCB t1 t2 t3 t4 ::   :: MkToLabeledTCB   {{ com trusted primitive that restores state }}
     | ( t )               :: S :: paren   								{{ ich [[t]] }}
     | { t / x } t'        :: M :: tsub    								{{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,10 +164,10 @@ defn
 		---------------- :: labelTop
 		G |- top : Label
 
-    G |- l1 : Label
+    G |- t1 : Label
     G |- t2 : T2
     -------------------------- :: labeledVal
-    G |- Lb l1 t2 : Labeled T2
+    G |- Lb t1 t2 : Labeled T2
  
 	  G |- t : T
 		------------------ :: lioVal
@@ -246,12 +246,12 @@ defn
     -------------------------------------- :: toLabeled
     G |- toLabeled t1 t2 : LIO (Labeled T)
 
-    G |- l  : Label
-    G |- c  : Label
-    G |- l1 : Label
-    G |- t  : T
+    G |- t1 : Label
+    G |- t2 : Label
+    G |- t3 : Label
+    G |- t4 : T
     --------------------------------------------- :: mkToLabeledTCB
-    G |- mkToLabeledTCB l c l1 t : LIO (Labeled T)
+    G |- mkToLabeledTCB t1 t2 t3 t4 : LIO (Labeled T)
 
 defns
   Jpop :: '' ::=

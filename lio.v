@@ -40,7 +40,7 @@ Inductive t : Set :=  (*r term *)
  | t_VAbs (x:termvar) (t5:t) (*r abstraction *)
  | t_VFix (t5:t) (*r fixpoint *)
  | t_VLIO (t5:t) (*r LIO value *)
- | t_VLabeled (l1:t) (t2:t) (*r labeled value *)
+ | t_VLabeled (t1:t) (t2:t) (*r labeled value *)
  | t_VHole : t (*r hole *)
  | t_Var (x:termvar) (*r variable *)
  | t_App (t5:t) (t':t) (*r application *)
@@ -56,7 +56,7 @@ Inductive t : Set :=  (*r term *)
  | t_Label (t5:t) (t':t) (*r label *)
  | t_UnLabel (t5:t) (*r unlabel *)
  | t_ToLabeled (t1:t) (t2:t) (*r execute sensitive computation *)
- | t_MkToLabeledTCB (l_5:t) (c:t) (l1:t) (t5:t) (*r trusted primitive that restores state *).
+ | t_MkToLabeledTCB (t1:t) (t2:t) (t3:t) (t4:t) (*r trusted primitive that restores state *).
 
 Definition G : Set := list (termvar*T).
 
@@ -82,7 +82,7 @@ Definition is_l_of_t (t_6:t) : Prop :=
   | (t_VAbs x t5) => False
   | (t_VFix t5) => False
   | (t_VLIO t5) => False
-  | (t_VLabeled l1 t2) => False
+  | (t_VLabeled t1 t2) => False
   | t_VHole => False
   | (t_Var x) => False
   | (t_App t5 t') => False
@@ -98,38 +98,12 @@ Definition is_l_of_t (t_6:t) : Prop :=
   | (t_Label t5 t') => False
   | (t_UnLabel t5) => False
   | (t_ToLabeled t1 t2) => False
-  | (t_MkToLabeledTCB l_5 c l1 t5) => False
+  | (t_MkToLabeledTCB t1 t2 t3 t4) => False
 end.
 
-Fixpoint is_t_of_t (t_6:t) : Prop :=
-  match t_6 with
-  | t_LBot => (True)
-  | t_LA => (True)
-  | t_LB => (True)
-  | t_LTop => (True)
-  | t_VTrue => (True)
-  | t_VFalse => (True)
-  | t_VUnit => (True)
-  | (t_VAbs x t5) => ((is_t_of_t t5))
-  | (t_VFix t5) => ((is_t_of_t t5))
-  | (t_VLIO t5) => ((is_t_of_t t5))
-  | (t_VLabeled l1 t2) => ((is_l_of_t l1) /\ (is_t_of_t t2))
-  | t_VHole => (True)
-  | (t_Var x) => (True)
-  | (t_App t5 t') => ((is_t_of_t t5) /\ (is_t_of_t t'))
-  | (t_IfEl t1 t2 t3) => ((is_t_of_t t1) /\ (is_t_of_t t2) /\ (is_t_of_t t3))
-  | (t_Join t1 t2) => ((is_t_of_t t1) /\ (is_t_of_t t2))
-  | (t_Meet t1 t2) => ((is_t_of_t t1) /\ (is_t_of_t t2))
-  | (t_CanFlowTo t1 t2) => ((is_t_of_t t1) /\ (is_t_of_t t2))
-  | (t_Return t5) => ((is_t_of_t t5))
-  | (t_Bind t5 t') => ((is_t_of_t t5) /\ (is_t_of_t t'))
-  | t_GetLabel => (True)
-  | t_GetClearance => (True)
-  | (t_LabelOf t5) => ((is_t_of_t t5))
-  | (t_Label t5 t') => ((is_t_of_t t5) /\ (is_t_of_t t'))
-  | (t_UnLabel t5) => ((is_t_of_t t5))
-  | (t_ToLabeled t1 t2) => ((is_t_of_t t1) /\ (is_t_of_t t2))
-  | (t_MkToLabeledTCB l_5 c l1 t5) => ((is_l_of_t l_5) /\ (is_l_of_t c) /\ (is_l_of_t l1) /\ (is_t_of_t t5))
+Definition is_m_of_m (m5:m) : Prop :=
+  match m5 with
+  | (m_Config l5 c t5) => ((is_l_of_t l5) /\ (is_l_of_t c))
 end.
 
 Definition is_v_of_t (t_6:t) : Prop :=
@@ -141,10 +115,10 @@ Definition is_v_of_t (t_6:t) : Prop :=
   | t_VTrue => (True)
   | t_VFalse => (True)
   | t_VUnit => (True)
-  | (t_VAbs x t5) => ((is_t_of_t t5))
+  | (t_VAbs x t5) => (True)
   | (t_VFix t5) => False
-  | (t_VLIO t5) => ((is_t_of_t t5))
-  | (t_VLabeled l1 t2) => ((is_l_of_t l1) /\ (is_t_of_t t2))
+  | (t_VLIO t5) => (True)
+  | (t_VLabeled t1 t2) => (True)
   | t_VHole => (True)
   | (t_Var x) => False
   | (t_App t5 t') => False
@@ -160,12 +134,7 @@ Definition is_v_of_t (t_6:t) : Prop :=
   | (t_Label t5 t') => False
   | (t_UnLabel t5) => False
   | (t_ToLabeled t1 t2) => False
-  | (t_MkToLabeledTCB l_5 c l1 t5) => False
-end.
-
-Definition is_m_of_m (m5:m) : Prop :=
-  match m5 with
-  | (m_Config l5 c t5) => ((is_l_of_t l5) /\ (is_l_of_t c) /\ (is_t_of_t t5))
+  | (t_MkToLabeledTCB t1 t2 t3 t4) => False
 end.
 
 (** library functions *)
@@ -197,7 +166,7 @@ Fixpoint fv_t (t_6:t) : list termvar :=
   | (t_VAbs x t5) => ((list_minus eq_termvar (fv_t t5) (cons x nil)))
   | (t_VFix t5) => ((fv_t t5))
   | (t_VLIO t5) => ((fv_t t5))
-  | (t_VLabeled l1 t2) => ((fv_t t2))
+  | (t_VLabeled t1 t2) => (app (fv_t t1) (fv_t t2))
   | t_VHole => nil
   | (t_Var x) => (cons x nil)
   | (t_App t5 t') => (app (fv_t t5) (fv_t t'))
@@ -213,7 +182,7 @@ Fixpoint fv_t (t_6:t) : list termvar :=
   | (t_Label t5 t') => (app (fv_t t5) (fv_t t'))
   | (t_UnLabel t5) => ((fv_t t5))
   | (t_ToLabeled t1 t2) => (app (fv_t t1) (fv_t t2))
-  | (t_MkToLabeledTCB l_5 c l1 t5) => ((fv_t t5))
+  | (t_MkToLabeledTCB t1 t2 t3 t4) => (app (fv_t t1) (app (fv_t t2) (app (fv_t t3) (fv_t t4))))
 end.
 
 Definition fv_m (m5:m) : list termvar :=
@@ -235,7 +204,7 @@ Fixpoint tsubst_t (t_6:t) (x5:termvar) (t__7:t) {struct t__7} : t :=
   | (t_VAbs x t5) => t_VAbs x (if list_mem eq_termvar x5 (cons x nil) then t5 else (tsubst_t t_6 x5 t5))
   | (t_VFix t5) => t_VFix (tsubst_t t_6 x5 t5)
   | (t_VLIO t5) => t_VLIO (tsubst_t t_6 x5 t5)
-  | (t_VLabeled l1 t2) => t_VLabeled l1 (tsubst_t t_6 x5 t2)
+  | (t_VLabeled t1 t2) => t_VLabeled (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2)
   | t_VHole => t_VHole 
   | (t_Var x) => (if eq_termvar x x5 then t_6 else (t_Var x))
   | (t_App t5 t') => t_App (tsubst_t t_6 x5 t5) (tsubst_t t_6 x5 t')
@@ -251,7 +220,7 @@ Fixpoint tsubst_t (t_6:t) (x5:termvar) (t__7:t) {struct t__7} : t :=
   | (t_Label t5 t') => t_Label (tsubst_t t_6 x5 t5) (tsubst_t t_6 x5 t')
   | (t_UnLabel t5) => t_UnLabel (tsubst_t t_6 x5 t5)
   | (t_ToLabeled t1 t2) => t_ToLabeled (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2)
-  | (t_MkToLabeledTCB l_5 c l1 t5) => t_MkToLabeledTCB l_5 c l1 (tsubst_t t_6 x5 t5)
+  | (t_MkToLabeledTCB t1 t2 t3 t4) => t_MkToLabeledTCB (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2) (tsubst_t t_6 x5 t3) (tsubst_t t_6 x5 t4)
 end.
 
 Definition tsubst_m (t_6:t) (x5:termvar) (m5:m) : m :=
@@ -277,15 +246,11 @@ Inductive GtT : G -> t -> T -> Prop :=    (* defn GtT *)
      GtT G5 t_LB T_TLabel
  | GtT_labelTop : forall (G5:G),
      GtT G5 t_LTop T_TLabel
- | GtT_labeledVal : forall (G5:G) (t2:t) (T2:T) (l1:t),
-     is_l_of_t l1 ->
-     is_t_of_t t2 ->
-     is_l_of_t l1 ->
-     GtT G5 l1 T_TLabel ->
+ | GtT_labeledVal : forall (G5:G) (t1 t2:t) (T2:T),
+     GtT G5 t1 T_TLabel ->
      GtT G5 t2 T2 ->
-     GtT G5 (t_VLabeled l1 t2) (T_TLabeled T2)
+     GtT G5 (t_VLabeled t1 t2) (T_TLabeled T2)
  | GtT_lioVal : forall (G5:G) (t5:t) (T5:T),
-     is_t_of_t t5 ->
      GtT G5 t5 T5 ->
      GtT G5 (t_VLIO t5) (T_TLIO T5)
  | GtT_hole : forall (G5:G) (T5:T),
@@ -294,51 +259,35 @@ Inductive GtT : G -> t -> T -> Prop :=    (* defn GtT *)
       (bound  x   T5   G5 )  ->
      GtT G5 (t_Var x) T5
  | GtT_abs : forall (G5:G) (x:termvar) (t5:t) (T1 T2:T),
-     is_t_of_t t5 ->
      GtT  (cons ( x , T1 )  G5 )  t5 T2 ->
      GtT G5 (t_VAbs x t5) (T_TArrow T1 T2)
  | GtT_app : forall (G5:G) (t_5 t1:t) (T2 T1:T),
-     is_t_of_t t_5 ->
-     is_t_of_t t1 ->
      GtT G5 t_5 (T_TArrow T1 T2) ->
      GtT G5 t1 T1 ->
      GtT G5 (t_App t_5 t1) T2
  | GtT_fix : forall (G5:G) (t5:t) (T5:T),
-     is_t_of_t t5 ->
      GtT G5 t5 (T_TArrow T5 T5) ->
      GtT G5 (t_VFix t5) T5
  | GtT_ifEl : forall (G5:G) (t1 t2 t3:t) (T5:T),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t3 ->
      GtT G5 t1 T_TBool ->
      GtT G5 t2 T5 ->
      GtT G5 t3 T5 ->
      GtT G5 (t_IfEl t1 t2 t3) T5
  | GtT_join : forall (G5:G) (t1 t2:t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      GtT G5 t2 T_TLabel ->
      GtT G5 (t_Join t1 t2) T_TLabel
  | GtT_meet : forall (G5:G) (t1 t2:t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      GtT G5 t1 T_TLabel ->
      GtT G5 t2 T_TLabel ->
      GtT G5 (t_Meet t1 t2) T_TLabel
  | GtT_canFlowTo : forall (G5:G) (t1 t2:t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      GtT G5 t1 T_TLabel ->
      GtT G5 t2 T_TLabel ->
      GtT G5 (t_CanFlowTo t1 t2) T_TBool
  | GtT_return : forall (G5:G) (t5:t) (T5:T),
-     is_t_of_t t5 ->
      GtT G5 t5 T5 ->
      GtT G5 (t_Return t5) (T_TLIO T5)
  | GtT_bind : forall (G5:G) (t5 t':t) (T2 T1:T),
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
      GtT G5 t5 (T_TLIO T1) ->
      GtT G5 t' (T_TArrow T1 (T_TLIO T2)) ->
      GtT G5 (t_Bind t5 t') (T_TLIO T2)
@@ -347,84 +296,51 @@ Inductive GtT : G -> t -> T -> Prop :=    (* defn GtT *)
  | GtT_getClearance : forall (G5:G),
      GtT G5 t_GetClearance (T_TLIO T_TLabel)
  | GtT_labelOf : forall (G5:G) (t5:t) (T5:T),
-     is_t_of_t t5 ->
      GtT G5 t5 (T_TLabeled T5) ->
      GtT G5 (t_LabelOf t5) T_TLabel
  | GtT_label : forall (G5:G) (t5 t':t) (T5:T),
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
      GtT G5 t5 T_TLabel ->
      GtT G5 t' T5 ->
      GtT G5 (t_Label t5 t') (T_TLIO  (T_TLabeled T5) )
  | GtT_unlabel : forall (G5:G) (t5:t) (T5:T),
-     is_t_of_t t5 ->
      GtT G5 t5 (T_TLabeled T5) ->
      GtT G5 (t_UnLabel t5) (T_TLIO T5)
  | GtT_toLabeled : forall (G5:G) (t1 t2:t) (T5:T),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      GtT G5 t1 T_TLabel ->
      GtT G5 t2 (T_TLIO T5) ->
      GtT G5 (t_ToLabeled t1 t2) (T_TLIO  (T_TLabeled T5) )
- | GtT_mkToLabeledTCB : forall (G5:G) (t5:t) (T5:T) (l_5 c l1:t),
-     is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t5 ->
-     is_l_of_t l_5 ->
-     is_l_of_t c ->
-     is_l_of_t l1 ->
-     GtT G5 l_5 T_TLabel ->
-     GtT G5 c T_TLabel ->
-     GtT G5 l1 T_TLabel ->
-     GtT G5 t5 T5 ->
-     GtT G5 (t_MkToLabeledTCB l_5 c l1 t5) (T_TLIO  (T_TLabeled T5) ).
+ | GtT_mkToLabeledTCB : forall (G5:G) (t1 t2 t3 t4:t) (T5:T),
+     GtT G5 t1 T_TLabel ->
+     GtT G5 t2 T_TLabel ->
+     GtT G5 t3 T_TLabel ->
+     GtT G5 t4 T5 ->
+     GtT G5 (t_MkToLabeledTCB t1 t2 t3 t4) (T_TLIO  (T_TLabeled T5) ).
 (** definitions *)
 
 (* defns Jpop *)
 Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
  | Pr_appCtx : forall (t1 t2 t1':t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
      pure_reduce t1 t1' ->
      pure_reduce (t_App t1 t2) (t_App t1' t2)
  | Pr_app : forall (x:termvar) (t1 t2:t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      pure_reduce (t_App  (t_VAbs x t1)  t2)  ( tsubst_t  t2   x   t1  ) 
  | Pr_fixCtx : forall (t5 t':t),
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
      pure_reduce t5 t' ->
      pure_reduce (t_VFix t5) (t_VFix t')
  | Pr_fix : forall (x:termvar) (t5:t),
-     is_t_of_t t5 ->
      pure_reduce (t_VFix  (t_VAbs x t5) )  ( tsubst_t   (t_VFix  (t_VAbs x t5) )    x   t5  ) 
  | Pr_ifCtx : forall (t1 t2 t3 t1':t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t3 ->
-     is_t_of_t t1' ->
      pure_reduce t1 t1' ->
      pure_reduce (t_IfEl t1 t2 t3) (t_IfEl t1' t2 t3)
  | Pr_ifTrue : forall (t2 t3:t),
-     is_t_of_t t2 ->
-     is_t_of_t t3 ->
      pure_reduce (t_IfEl t_VTrue t2 t3) t2
  | Pr_ifFalse : forall (t2 t3:t),
-     is_t_of_t t2 ->
-     is_t_of_t t3 ->
      pure_reduce (t_IfEl t_VFalse t2 t3) t3
  | Pr_joinCtxL : forall (t1 t2 t1':t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
      pure_reduce t1 t1' ->
      pure_reduce (t_Join t1 t2) (t_Join t1' t2)
  | Pr_joinCtxR : forall (l1 t2 t2':t),
      is_l_of_t l1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t2' ->
      pure_reduce t2 t2' ->
      pure_reduce (t_Join l1 t2) (t_Join l1 t2')
  | Pr_joinBotL : forall (l5:t),
@@ -453,15 +369,10 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
       (not (  l5 = t_LTop  ))  ->
      pure_reduce (t_Join l5 t_LTop) t_LTop
  | Pr_meetCtxL : forall (t1 t2 t1':t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
      pure_reduce t1 t1' ->
      pure_reduce (t_Meet t1 t2) (t_Meet t1' t2)
  | Pr_meetCtxR : forall (l1 t2 t2':t),
      is_l_of_t l1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t2' ->
      pure_reduce t2 t2' ->
      pure_reduce (t_Meet l1 t2) (t_Meet l1 t2')
  | Pr_meetBotL : forall (l5:t),
@@ -490,15 +401,10 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
       (not (  l5 = t_LTop  ))  ->
      pure_reduce (t_Meet l5 t_LTop) l5
  | Pr_canFlowToCtxL : forall (t1 t2 t1':t),
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
      pure_reduce t1 t1' ->
      pure_reduce (t_CanFlowTo t1 t2) (t_CanFlowTo t1' t2)
  | Pr_canFlowToCtxR : forall (l1 t2 t2':t),
      is_l_of_t l1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t2' ->
      pure_reduce t2 t2' ->
      pure_reduce (t_CanFlowTo l1 t2) (t_CanFlowTo l1 t2')
  | Pr_canFlowToBot : forall (l5:t),
@@ -519,13 +425,9 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
       (not (  l5 = t_LTop  ))  ->
      pure_reduce (t_CanFlowTo l5 t_LTop) t_VTrue
  | Pr_labelOfCtx : forall (t5 t':t),
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
      pure_reduce t5 t' ->
      pure_reduce (t_LabelOf t5) (t_LabelOf t')
- | Pr_labelOf : forall (t2 l1:t),
-     is_l_of_t l1 ->
-     is_t_of_t t2 ->
+ | Pr_labelOf : forall (l1 t2:t),
      is_l_of_t l1 ->
      pure_reduce (t_LabelOf  (t_VLabeled l1 t2) ) l1.
 (** definitions *)
@@ -534,20 +436,14 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
 Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
  | LIO_return : forall (l5 c t5:t),
      is_l_of_t l5 ->
-     is_t_of_t t5 ->
      lio_reduce (m_Config l5 c (t_Return t5)) (m_Config l5 c (t_VLIO t5))
  | LIO_bindCtx : forall (l5 c t1 t2 l' c' t1':t),
      is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      is_l_of_t l' ->
-     is_t_of_t t1' ->
      lio_reduce (m_Config l5 c t1) (m_Config l' c' t1') ->
      lio_reduce (m_Config l5 c (t_Bind t1 t2)) (m_Config l' c' (t_Bind t1' t2))
  | LIO_bind : forall (l5 c t1 t2:t),
      is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
      lio_reduce (m_Config l5 c (t_Bind (t_VLIO t1) t2)) (m_Config l5 c (t_App t2 t1))
  | LIO_getLabel : forall (c l5:t),
      is_l_of_t l5 ->
@@ -559,15 +455,10 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      lio_reduce (m_Config l5 c t_GetClearance) (m_Config l5 c (t_Return c))
  | LIO_labelCtx : forall (l5 c t1 t2 t1':t),
      is_l_of_t l5 ->
-     is_t_of_t t1 ->
-     is_t_of_t t2 ->
-     is_t_of_t t1' ->
      pure_reduce t1 t1' ->
      lio_reduce (m_Config l5 c (t_Label t1 t2)) (m_Config l5 c (t_Label t1' t2))
- | LIO_label : forall (t2 l1 l_5 c:t),
+ | LIO_label : forall (l1 t2 l_5 c:t),
      is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t2 ->
      is_l_of_t l1 ->
      is_l_of_t l_5 ->
      is_l_of_t c ->
@@ -576,38 +467,33 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      lio_reduce (m_Config l_5 c (t_Label l1 t2)) (m_Config l_5 c (t_Return  (t_VLabeled l1 t2) ))
  | LIO_unlabelCtx : forall (l5 c t5 t':t),
      is_l_of_t l5 ->
-     is_t_of_t t5 ->
-     is_t_of_t t' ->
      pure_reduce t5 t' ->
      lio_reduce (m_Config l5 c (t_UnLabel t5)) (m_Config l5 c (t_UnLabel t'))
- | LIO_unlabel : forall (t2 l_5 l1 l2 c:t),
+ | LIO_unlabel : forall (l1 t2 l_5 l2 c:t),
      is_l_of_t l_5 ->
      is_l_of_t l1 ->
-     is_t_of_t t2 ->
      is_l_of_t l2 ->
      is_l_of_t l_5 ->
-     is_l_of_t l1 ->
      is_l_of_t l2 ->
      is_l_of_t c ->
      pure_reduce (t_Join l_5 l1) l2 ->
      pure_reduce (t_CanFlowTo l2 c) t_VTrue ->
      lio_reduce (m_Config l_5 c (t_UnLabel  (t_VLabeled l1 t2) )) (m_Config l2 c (t_Return t2))
- | LIO_toLabeled : forall (t5:t) (x:termvar) (l1 l_5 c:t),
+ | LIO_toLabeled : forall (l1 t5:t) (x:termvar) (l_5 c:t),
      is_l_of_t l_5 ->
-     is_l_of_t l1 ->
-     is_t_of_t t5 ->
      is_l_of_t l1 ->
      is_l_of_t l_5 ->
      is_l_of_t c ->
      pure_reduce (t_CanFlowTo l_5 l1) t_VTrue ->
      pure_reduce (t_CanFlowTo l1 c) t_VTrue ->
      lio_reduce (m_Config l_5 c (t_ToLabeled l1 t5)) (m_Config l_5 c (t_Bind t5  (t_VAbs x (t_MkToLabeledTCB l_5 c l1 (t_Var x))) ))
- | LIO_mkToLabeledTCB : forall (c l' c' v5 l1 l_5:t),
+ | LIO_mkToLabeledTCB : forall (c l1 v5 l' c' l_5:t),
      is_l_of_t l_5 ->
      is_l_of_t l' ->
+     is_l_of_t c' ->
      is_l_of_t l1 ->
      is_v_of_t v5 ->
-     is_l_of_t l1 ->
+     is_l_of_t l' ->
      is_l_of_t l_5 ->
      pure_reduce (t_CanFlowTo l_5 l1) t_VTrue ->
      lio_reduce (m_Config l_5 c (t_MkToLabeledTCB l' c' l1 v5)) (m_Config l' c' (t_Label l1 v5)).
