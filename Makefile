@@ -21,3 +21,4 @@ clean:
 	-rm *.tex
 	-rm lio.v
 	-rm *.vo
+	-rm *~

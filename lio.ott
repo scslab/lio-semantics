@@ -34,7 +34,6 @@ v :: 'v_' ::= {{ com  value }}
     | \ x . t               ::   :: VAbs         {{ com abstraction }}
     | LIO t                 ::   :: VLIO         {{ com LIO value }} {{ tex ([[t]])^[[LIO]] }}
     | Lb t1 t2              ::   :: VLabeled     {{ com labeled value }}
-    | hole                  ::   :: VHole        {{ com hole }} {{ tex \bullet }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %{{{ TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,8 +75,8 @@ t :: 't_' ::=  {{ com term }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 m ::  'm_' ::= {{ com monadic LIO term }}
-    | conf l c t            ::    :: Config      {{ com configuration }}
-                                                 {{ tex \langle [[l]], [[c]], [[t]] \rangle }}
+    | conf t1 t2 t3         ::    :: Config      {{ com configuration }}
+                                                 {{ tex \langle [[t1]], [[t2]], [[t3]] \rangle }}
 
 %{{{ TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 T {{ tex \tau }} :: T_ ::= {{ com type }}
@@ -377,6 +376,9 @@ defns
     ------------------------ :: labelOf
     labelOf (Lb l1 t2) ~> l1
 
+		------------ :: hole
+ 		hole ~> hole
+
 defns
   Jop :: '' ::=
 
@@ -391,7 +393,7 @@ defns
     conf l c bind t1 t2 --> conf l' c' bind t1' t2
 
     ----------------------------------------------------  :: bind
-    conf l c bind LIO t1 t2 --> conf l c t2 t1
+    conf l c bind LIO t1 t2 --> conf l c (t2 t1)
 
     --------------------------------------- :: getLabel
     conf l c getLabel --> conf l c return l
@@ -424,7 +426,10 @@ defns
 
     canFlowTo l l1 ~> true
     ------------------------------------------------------------ :: mkToLabeledTCB
-    conf l c mkToLabeledTCB l' c' l1 v --> conf l' c' label l1 v
+    conf l c mkToLabeledTCB l' c' l1 t --> conf l' c' label l1 t
+
+    ------------------------------------------- :: hole
+    conf hole hole hole --> conf hole hole hole
 
 
 embed
@@ -449,8 +454,7 @@ Tactic Notation "value_cases" tactic(first) ident(c) :=
   | Case_aux c "value_VUnit"
   | Case_aux c "value_VAbs"
   | Case_aux c "value_VLIO"
-  | Case_aux c "value_VLabeled"
-  | Case_aux c "value_VHole" ].
+  | Case_aux c "value_VLabeled" ].
 
 Tactic Notation "term_cases" tactic(first) ident(c) :=
   first;
@@ -545,7 +549,8 @@ Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "Pr_canFlowToBA"
   | Case_aux c "Pr_canFlowToTop"
   | Case_aux c "Pr_labelOfCtx"
-  | Case_aux c "Pr_labelOf" ].
+  | Case_aux c "Pr_labelOf"
+  | Case_aux c "Pr_hole" ].
 
 
 Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
@@ -560,6 +565,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
   | Case_aux c "LIO_toLabeled"
-  | Case_aux c "LIO_mkToLabeledTCB" ].
+  | Case_aux c "LIO_mkToLabeledTCB"
+  | Case_aux c "LIO_hole" ].
 
 }}
