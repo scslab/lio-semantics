@@ -1587,7 +1587,16 @@ Proof.
       unfold not. intro.
       rewrite <- Heqo0 in H0. inversion H0.
       SSCase "t1 [/= l". remember (canFlowTo t3_1 l).  destruct o.
-      SSSCase "t3_1 [= l". admit.
+      SSSCase "t3_1 [= l". 
+      rewrite erase_config_idempotent.
+      rewrite inv_erase_conf with (l := l) (l1 := t1) (c1 := t2) (t2 := t_MkToLabeledTCB t3_1 t3_2 (erase_term l t3_3) (erase_term l t3_4)).
+      apply lio_reduce_l_step. assumption.
+      admit.
+      assumption.
+      assumption.
+      assumption.
+      unfold not. intros. rewrite  <- Heqo in H0. inversion H0.
+      assumption.
       SSSCase "t3_1 [/= l". 
       apply lio_reduce_l_step. assumption.
       apply LIO_hole. assumption.
