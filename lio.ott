@@ -11,6 +11,9 @@ metavar typvar, X ::= {{ com type variable }}
     {{ tex \mathit{[[typvar]]} }}
     {{ coq nat }} {{ coq-equality }}
 
+metavar n ::= {{ com index count }} 
+    {{ coq nat }} {{ coq-equality }}
+
 grammar
 %{{{ LABELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 l, c :: 'l_' ::= {{ com label }}
@@ -68,15 +71,13 @@ t :: 't_' ::=  {{ com term }}
     | label t t'            ::   :: Label        {{ com label }}
     | unlabel t             ::   :: UnLabel      {{ com unlabel }}
     | toLabeled t1 t2       ::   :: ToLabeled    {{ com execute sensitive computation }}
-    | mkToLabeledTCB t1 t2 t3 t4 ::   :: MkToLabeledTCB 
-                                                 {{ com trusted primitive that restores state }}
     | ( t )                 :: S :: paren        {{ ich [[t]] }}
     | { t / x } t'          :: M :: tsub         {{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 m ::  'm_' ::= {{ com monadic LIO term }}
-    | conf t1 t2 t3         ::    :: Config      {{ com configuration }}
-                                                 {{ tex \langle [[t1]], [[t2]], [[t3]] \rangle }}
+    | conf t1 t2 t3 n       ::    :: Config      {{ com configuration }}
+                                                 {{ tex \langle [[t1]], [[t2]], [[t3]] \rangle_[[n]] }}
 
 %{{{ TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 T {{ tex \tau }} :: T_ ::= {{ com type }}
@@ -97,9 +98,11 @@ G {{ tex \Gamma }} :: G_ ::= {{ com type environment }} {{ coq list (termvar*T) 
 terminals :: 'terminals_' ::=
     | \                     ::   :: lambda       {{ tex \lambda }}
     | -->                   ::   :: lio_reduce   {{ tex \longrightarrow }}
+    | -->*                  ::   :: lio_reduce_multi {{ tex \longrightarrow^* }}
     | ~>                    ::   :: pure_reduce  {{ tex \leadsto }}
     |  ->                   ::   :: arrow        {{ tex \rightarrow }}
     | |-                    ::   :: turnstile    {{ tex \vdash }}
+    | <=                    ::   :: le           {{ tex \leq }}
     | in                    ::   :: in           {{ tex \in }}
 
 formula :: 'formula_' ::=          
@@ -108,6 +111,9 @@ formula :: 'formula_' ::=
                                                  {{ coq (not ([[formula]])) }}
     | t = t'                ::   :: eqv          {{ ich [[t]]=[[t']] }}
     | x : T in G            ::   :: xTG          {{ coq (bound [[x]] [[T]] [[G]])  }}
+    | n = n'                ::   :: eqvN         {{ ich [[n]]=[[n']] }}
+    | n <= n'               ::   :: leN          {{ ich [[n]]<=[[n']] }}
+    | n = succ n'           ::   :: succ         {{ ich [[n]]=[[n']]+1 }} {{ tex [[n]]=[[n']]+1 }}
 
 
 embed
@@ -238,18 +244,11 @@ defn
     -------------------------------------- :: toLabeled
     G |- toLabeled t1 t2 : LIO (Labeled T)
 
-    G |- t1 : Label
-    G |- t2 : Label
-    G |- t3 : Label
-    G |- t4 : T
-    --------------------------------------------- :: mkToLabeledTCB
-    G |- mkToLabeledTCB t1 t2 t3 t4 : LIO (Labeled T)
-
 defns
   Jpop :: '' ::=
 
     defn
-    t1 ~> t2 ::  :: pure_reduce :: Pr_       {{ com [[t1]] reduces to [[t2]] }} by 
+    t1 ~> t2 ::  :: pure_reduce :: Pr_  {{ com [[t1]] reduces to [[t2]] }} by 
 
     t1 ~> t1'
     --------------- :: appCtx
@@ -385,51 +384,62 @@ defns
     defn
     m1 --> m2 ::  :: lio_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by
 
-    ------------------------------------ :: return
-    conf l c return t --> conf l c LIO t
+    ---------------------------------------- :: return
+    conf l c return t n --> conf l c LIO t n
 
-    conf l c t1 --> conf l' c' t1'
-    ---------------------------------------------- :: bindCtx
-    conf l c bind t1 t2 --> conf l' c' bind t1' t2
+    conf l c t1 n --> conf l' c' t1' n'
+		n <= n'
+    --------------------------------------------------- :: bindCtx
+    conf l c bind t1 t2 n --> conf l' c' bind t1' t2 n'
 
-    ----------------------------------------------------  :: bind
-    conf l c bind LIO t1 t2 --> conf l c (t2 t1)
+    ------------------------------------------------ :: bind
+    conf l c bind LIO t1 t2 n --> conf l c (t2 t1) n
 
-    --------------------------------------- :: getLabel
-    conf l c getLabel --> conf l c return l
+    ------------------------------------------- :: getLabel
+    conf l c getLabel n --> conf l c return l n
 
-    ------------------------------------------- :: getClearance
-    conf l c getClearance --> conf l c return c
+    ----------------------------------------------- :: getClearance
+    conf l c getClearance n --> conf l c return c n
 
     t1 ~> t1'
-    ----------------------------------------------  :: labelCtx
-    conf l c label t1 t2 --> conf l c label t1' t2
+    -------------------------------------------------- :: labelCtx
+    conf l c label t1 t2 n --> conf l c label t1' t2 n
 
     canFlowTo l  l1 ~> true
     canFlowTo l1 c ~> true 
-    ---------------------------------------------------  :: label
-    conf l c label l1 t2 --> conf l c return (Lb l1 t2)
+    -------------------------------------------------------  :: label
+    conf l c label l1 t2 n --> conf l c return (Lb l1 t2) n
 
     t ~> t'
-    ------------------------------------------ :: unlabelCtx
-    conf l c unlabel t --> conf l c unlabel t'
+    ---------------------------------------------- :: unlabelCtx
+    conf l c unlabel t n --> conf l c unlabel t' n
 
     join l l1 ~> l2
     canFlowTo l2 c ~> true
-    --------------------------------------------------- :: unlabel
-    conf l c unlabel (Lb l1 t2) --> conf l2 c return t2
+    ------------------------------------------------------- :: unlabel
+    conf l c unlabel (Lb l1 t2) n --> conf l2 c return t2 n
 
     canFlowTo l l1 ~> true
     canFlowTo l1 c ~> true
-    -------------------------------------------------------------------------- :: toLabeled
-    conf l c toLabeled l1 t --> conf l c bind t (\x . mkToLabeledTCB l c l1 x) 
+    conf l c t n -->* conf l' c' return t' n'
+    n <= n'
+		n'' = succ n'
+		canFlowTo l' l1 ~> true
+    ------------------------------------------------------ :: toLabeled
+    conf l c toLabeled l1 t n --> conf l c label l1 t' n''
 
-    canFlowTo l l1 ~> true
-    ------------------------------------------------------------ :: mkToLabeledTCB
-    conf l c mkToLabeledTCB l' c' l1 t --> conf l' c' label l1 t
+    ----------------------------------------------- :: hole
+    conf hole hole hole n --> conf hole hole hole n
 
-    ------------------------------------------- :: hole
-    conf hole hole hole --> conf hole hole hole
+    defn
+    m1 -->* m2 ::  :: lio_reduce_multi :: LIO_  {{ com [[m1]] (big-step) reduces to [[m2]] }} by
+
+    conf l c t n --> conf l' c' t' n'
+    --------------------------------- :: onestep
+    conf l c t n -->* conf l' c' t' n'
+
+    ------------------------------ :: done
+    conf l c t n -->* conf l c t n
 
 
 embed
@@ -483,8 +493,7 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_LabelOf"
   | Case_aux c "term_Label"
   | Case_aux c "term_UnLabel"
-  | Case_aux c "term_ToLabeled"
-  | Case_aux c "term_MkToLabeledTCB" ].
+  | Case_aux c "term_ToLabeled" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
   first;
@@ -565,7 +574,6 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
   | Case_aux c "LIO_toLabeled"
-  | Case_aux c "LIO_mkToLabeledTCB"
   | Case_aux c "LIO_hole" ].
 
 }}

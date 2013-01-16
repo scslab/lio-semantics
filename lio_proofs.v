@@ -44,23 +44,44 @@ Qed.
 
 Hint Resolve labels_cannot_be_reduced.
 
-Lemma values_cannot_be_lio_reduced : forall l c v m,
+Lemma values_cannot_be_lio_reduced : forall l c v n m,
   is_v_of_t v ->
-  ~ (lio_reduce (m_Config l c v) m).
+  ~ (lio_reduce (m_Config l c v n) m).
 Proof.
-  intros l c v m H1.
+  intros l c v n m H1.
   unfold not.
   intro H2.
   induction v; repeat (solve by inversion).
 Qed.
 
+(* NO!
+Lemma values_cannot_be_lio_reduced_multi : forall l c v n m,
+  is_v_of_t v ->
+  ~ (lio_reduce_multi (m_Config l c v n) m).
+Proof.
+  intros l c v n m H1.
+  unfold not.
+  intro H2.
+  inversion H2.
+  apply values_cannot_be_lio_reduced in H10. solve by inversion. assumption.
+  subst.
+  induction v; repeat (solve by inversion).
+  inversion H2.
+  subst.
+  apply values_cannot_be_lio_reduced in H10. solve by inversion. assumption.
+  subst.
+  apply LIO_done in H2.
+  induction v; repeat (solve by inversion).
+Qed.
+*)
+
 Hint Resolve values_cannot_be_lio_reduced.
 
-Corollary labels_cannot_be_lio_reduced : forall l c v m, 
+Corollary labels_cannot_be_lio_reduced : forall l c v n m, 
   is_l_of_t v ->
-  ~ (lio_reduce (m_Config l c v) m).
+  ~ (lio_reduce (m_Config l c v n) m).
 Proof.
-  intros l c v m H1.
+  intros l c v n m H1.
   eapply values_cannot_be_lio_reduced.
   eapply labels_are_values.
   assumption.
@@ -79,7 +100,8 @@ Proof.
    SCase "Pr_app". subst t3. subst. solve by inversion. 
   Case "Pr_app". inversion Hy2. subst t3. solve by inversion.  reflexivity.
   Case "Pr_fixCtx". inversion Hy2. subst t5. apply IHHy1 in H0. subst t'0. reflexivity.
-    subst. inversion Hy1.
+
+  subst. inversion Hy1.
   Case "Pr_fix". inversion Hy2.  solve by inversion. reflexivity.
   Case "Pr_ifCtx". inversion Hy2. apply IHHy1 in H3. subst. reflexivity. 
    SCase "true". subst. inversion Hy1.
@@ -253,12 +275,107 @@ Qed.
 
 Hint Resolve deterministic_pure_reduce.
 
-Axiom alpha_equiv_abs_mkTo : forall l c t x x' l' c' l1,
-  m_Config l c (t_Bind t (t_VAbs x  (t_MkToLabeledTCB l' c' l1 (t_Var x )))) =
-  m_Config l c (t_Bind t (t_VAbs x' (t_MkToLabeledTCB l' c' l1 (t_Var x')))).
+(*
+Lemma deterministic_lio_reduce : forall l c t n v1 n1 v2 n2,
+   is_l_of_t l ->
+   is_l_of_t c ->
+   is_v_of_t v1 ->
+   is_v_of_t v2 ->
+   lio_reduce (m_Config l c t n) (m_Config l c v1 n1) ->
+   lio_reduce (m_Config l c t n) (m_Config l c v2 n2) ->
+   v1 = v2 /\ n1 = n2.
+Proof.
+  intros.
+  inversion H3.
+  inversion H4.
+  split.
+  subst.
+  inversion H16.
+  reflexivity. subst. assumption.
+  intros l c t n v1 n1 v2 n2 l_of_t_l l_of_t_c v_of_t_v1 v_of_t_v2 Hy1 Hy2.
+  generalize dependent v2. 
+  inversion Hy1.
+  lio_reduce_cases (induction H12) Case; intros y2 Hy2.
+  Case "LIO_return". 
+    inversion Hy2. 
+    apply H1 with (l := l) (c := c) (x := x) (n0 := n0).
+    subst.
+    
+  Case "LIO_bindCtx". 
+    inversion Hy2.
+  Case "LIO_bind".
+    inversion Hy2.
+  Case "LIO_getLabel". admit.
+  Case "LIO_getClearance". admit.
+  Case "LIO_labelCtx".
+    inversion Hy2.
+    subst.
+    rewrite H10.
+    assert (t1' = t1'0).
+    SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
+    subst t1'0. reflexivity.
+    subst t1 c0 l_5 t2.
+    apply labels_cannot_be_reduced in H1. solve by inversion. assumption.
+  Case "LIO_label".
+    inversion Hy2.
+    subst. 
+    apply labels_cannot_be_reduced in H12. solve by inversion. assumption.
+    reflexivity.
+  Case "LIO_unlabelCtx".
+    inversion Hy2.
+    subst. 
+    assert (t' = t'0).
+    SCase "assertion". apply  deterministic_pure_reduce with (x := t5). assumption. assumption.
+    subst t'0. reflexivity.
+    subst. 
+    apply values_cannot_be_reduced in H1. solve by inversion. simpl. trivial.
+ Case "LIO_unlabel".
+    inversion Hy2.
+    subst.
+    apply values_cannot_be_reduced in H12. solve by inversion. simpl. trivial.
+    subst.
+    assert (l2 = l3).
+    SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
+    subst l3. reflexivity.
+  Case "LIO_toLabeled".
+    inversion Hy2.
+    subst.
+    inversion H6.
+    inversion H23.
+    subst.
+  Case "LIO_hole".
+    inversion Hy2.
+    reflexivity.
+Qed.
 
-Hint Resolve alpha_equiv_abs_mkTo.
+*)
 
+
+Lemma deterministic_lio_reduce_multi : forall l c t n l' c' t' n' t'' n'',
+  lio_reduce_multi (m_Config l c t n) (m_Config l' c' (t_Return t') n')   ->
+  lio_reduce_multi (m_Config l c t n) (m_Config l' c' (t_Return t'') n'') ->
+  t' = t'' /\ n' = n''.
+Admitted.
+(*
+Proof.
+  
+  intros l c t n l' c' t' n' t'' n'' H1 H2.
+  generalize dependent t''.
+  inversion H1.
+  lio_reduce_cases (induction H12) Case; intros t'' Hy2; subst.
+  Case "LIO_return".
+    inversion Hy2. subst. reflexivity.
+  subst.
+*)
+
+
+
+(* NOT THE CASE -->* needs to be deterministic;
+   maybe want to show that
+   t -->* return t'
+   t -->* return t''
+   then t' = t'' 
+*)
 Lemma deterministic_lio_reduce :
   deterministic lio_reduce.
 Proof.
@@ -269,13 +386,13 @@ Proof.
     inversion Hy2. reflexivity.
   Case "LIO_bindCtx".
     inversion Hy2.
-    subst. apply IHHy1 in H12. inversion H12. reflexivity.
+    subst. apply IHHy1 in H14. inversion H14. reflexivity.
     subst.
     inversion Hy2.
     subst. inversion Hy1. 
   Case "LIO_bind".
     inversion Hy2.
-    subst. inversion H10. reflexivity.
+    subst. inversion H11. reflexivity.
   Case "LIO_getLabel".
     inversion Hy2.
     subst. reflexivity.
@@ -293,7 +410,7 @@ Proof.
   Case "LIO_label".
     inversion Hy2.
     subst. 
-    apply labels_cannot_be_reduced in H11. solve by inversion. assumption.
+    apply labels_cannot_be_reduced in H12. solve by inversion. assumption.
     reflexivity.
   Case "LIO_unlabelCtx".
     inversion Hy2.
@@ -306,7 +423,7 @@ Proof.
  Case "LIO_unlabel".
     inversion Hy2.
     subst.
-    apply values_cannot_be_reduced in H11. solve by inversion. simpl. trivial.
+    apply values_cannot_be_reduced in H12. solve by inversion. simpl. trivial.
     subst.
     assert (l2 = l3).
     SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
@@ -314,10 +431,6 @@ Proof.
   Case "LIO_toLabeled".
     inversion Hy2.
     subst.
-    clear. apply alpha_equiv_abs_mkTo.
-  Case "LIO_mkToLabeledTCB".
-    inversion Hy2.
-    reflexivity.
   Case "LIO_hole".
     inversion Hy2.
     reflexivity.
