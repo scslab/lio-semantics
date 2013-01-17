@@ -275,107 +275,38 @@ Qed.
 
 Hint Resolve deterministic_pure_reduce.
 
-(*
-Lemma deterministic_lio_reduce : forall l c t n v1 n1 v2 n2,
-   is_l_of_t l ->
-   is_l_of_t c ->
-   is_v_of_t v1 ->
-   is_v_of_t v2 ->
-   lio_reduce (m_Config l c t n) (m_Config l c v1 n1) ->
-   lio_reduce (m_Config l c t n) (m_Config l c v2 n2) ->
-   v1 = v2 /\ n1 = n2.
+
+Lemma deterministic_lio_reduce_multi : forall l c t n l1 c1 t1 n1 l2 c2 t2 n2,
+  lio_reduce_multi (m_Config l c t n) (m_Config l1 c1 (t_Return t1) n1) ->
+  lio_reduce_multi (m_Config l c t n) (m_Config l2 c2 (t_Return t2) n2) ->
+  l1 = l2 /\ c1 = c2 /\ t1 = t2 /\ n1 = n2.
 Proof.
   intros.
-  inversion H3.
-  inversion H4.
-  split.
-  subst.
-  inversion H16.
-  reflexivity. subst. assumption.
-  intros l c t n v1 n1 v2 n2 l_of_t_l l_of_t_c v_of_t_v1 v_of_t_v2 Hy1 Hy2.
-  generalize dependent v2. 
-  inversion Hy1.
-  lio_reduce_cases (induction H12) Case; intros y2 Hy2.
-  Case "LIO_return". 
-    inversion Hy2. 
-    apply H1 with (l := l) (c := c) (x := x) (n0 := n0).
+  term_cases (induction t) Case; try (inversion H; inversion H13).
+  Case "term_Return". 
+    inversion H. subst. inversion H13. subst.
+    inversion H0. subst. inversion H15. subst.
+    eauto.
+  Case "term_GetLabel". 
+    inversion H. subst. inversion H13. subst.
+    inversion H0. subst. inversion H21. subst.
+    eauto.
+  Case "term_GetClearance". 
+    inversion H. subst. inversion H13. subst.
+    inversion H0. subst. inversion H21. subst.
+    eauto.
+  Case "term_Label". 
     subst.
-    
-  Case "LIO_bindCtx". 
-    inversion Hy2.
-  Case "LIO_bind".
-    inversion Hy2.
-  Case "LIO_getLabel". admit.
-  Case "LIO_getClearance". admit.
-  Case "LIO_labelCtx".
-    inversion Hy2.
+    inversion H. subst. inversion H18. subst.
+    inversion H0. subst. inversion H33. subst.
+    eauto.
+  Case "term_UnLabel". 
     subst.
-    rewrite H10.
-    assert (t1' = t1'0).
-    SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
-    subst t1'0. reflexivity.
-    subst t1 c0 l_5 t2.
-    apply labels_cannot_be_reduced in H1. solve by inversion. assumption.
-  Case "LIO_label".
-    inversion Hy2.
-    subst. 
-    apply labels_cannot_be_reduced in H12. solve by inversion. assumption.
-    reflexivity.
-  Case "LIO_unlabelCtx".
-    inversion Hy2.
-    subst. 
-    assert (t' = t'0).
-    SCase "assertion". apply  deterministic_pure_reduce with (x := t5). assumption. assumption.
-    subst t'0. reflexivity.
-    subst. 
-    apply values_cannot_be_reduced in H1. solve by inversion. simpl. trivial.
- Case "LIO_unlabel".
-    inversion Hy2.
-    subst.
-    apply values_cannot_be_reduced in H12. solve by inversion. simpl. trivial.
-    subst.
-    assert (l2 = l3).
-    SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
-    subst l3. reflexivity.
-  Case "LIO_toLabeled".
-    inversion Hy2.
-    subst.
-    inversion H6.
-    inversion H23.
-    subst.
-  Case "LIO_hole".
-    inversion Hy2.
-    reflexivity.
+    inversion H. subst. inversion H18. subst.
+    inversion H0. subst. inversion H35. subst.
+    eauto.
 Qed.
 
-*)
-
-
-Lemma deterministic_lio_reduce_multi : forall l c t n l' c' t' n' t'' n'',
-  lio_reduce_multi (m_Config l c t n) (m_Config l' c' (t_Return t') n')   ->
-  lio_reduce_multi (m_Config l c t n) (m_Config l' c' (t_Return t'') n'') ->
-  t' = t'' /\ n' = n''.
-Admitted.
-(*
-Proof.
-  
-  intros l c t n l' c' t' n' t'' n'' H1 H2.
-  generalize dependent t''.
-  inversion H1.
-  lio_reduce_cases (induction H12) Case; intros t'' Hy2; subst.
-  Case "LIO_return".
-    inversion Hy2. subst. reflexivity.
-  subst.
-*)
-
-
-
-(* NOT THE CASE -->* needs to be deterministic;
-   maybe want to show that
-   t -->* return t'
-   t -->* return t''
-   then t' = t'' 
-*)
 Lemma deterministic_lio_reduce :
   deterministic lio_reduce.
 Proof.
@@ -431,6 +362,12 @@ Proof.
   Case "LIO_toLabeled".
     inversion Hy2.
     subst.
+    assert (l' = l'0 /\ c' = c'0 /\ t' = t'0 /\ n' = n'0) as Hrwrt.
+    apply deterministic_lio_reduce_multi with (l := l_5) (c := c) (t0 := t5) (n0 := n5).
+    SCase "assertion". assumption. assumption.
+    assert (t' = t'0) as Hrwrt_t. apply Hrwrt. rewrite Hrwrt_t.
+    assert (n' = n'0) as Hrwrt_n. apply Hrwrt. rewrite Hrwrt_n. 
+    reflexivity.
   Case "LIO_hole".
     inversion Hy2.
     reflexivity.
@@ -511,7 +448,7 @@ Fixpoint erase_term (l term : t) : t :=
    | t_VAbs x t5       => t_VAbs x (erase_term l t5)
    | t_VLIO t5         => t_VLIO (erase_term l t5)
    | t_VLabeled l1 t2  => t_VLabeled (erase_term l l1)
-                                     (if canFlowTo l1 l === Some true
+                                     (if canFlowTo (erase_term l l1) l === Some true
                                         then erase_term l t2
                                         else t_VHole)
    | t_VHole           => t_VHole
@@ -530,10 +467,6 @@ Fixpoint erase_term (l term : t) : t :=
    | t_Label t5 t'     => t_Label (erase_term l t5) (erase_term l t')
    | t_UnLabel t5      => t_UnLabel (erase_term l t5)
    | t_ToLabeled t1 t2 => t_ToLabeled (erase_term l t1) (erase_term l t2)
-   | t_MkToLabeledTCB l_5 c l1 t5 => t_MkToLabeledTCB (erase_term l l_5)
-                                                      (erase_term l c)
-                                                      (erase_term l l1)
-                                                      (erase_term l t5)
   end.
 
 (* ~>L *)
@@ -564,9 +497,9 @@ Qed.
    and clearance since they are protected by the current labe. *)
 Definition erase_config (l : t) (cfg : m) : m :=
   match cfg with
-   | m_Config l1 c1 t1 => if canFlowTo l1 l
-                            then m_Config l1 c1 (erase_term l t1)
-                            else m_Config t_VHole t_VHole t_VHole
+   | m_Config l1 c1 t1 n1 => if canFlowTo l1 l
+                              then m_Config l1 c1 (erase_term l t1) n1
+                              else m_Config t_VHole t_VHole t_VHole n1
   end.
 
 Lemma erase_label_id : forall l l2,
@@ -575,6 +508,13 @@ Lemma erase_label_id : forall l l2,
   erase_term l l2 = l2.
 Proof.
   intros.  induction l2; auto; inversion H0.
+Qed. 
+
+Lemma t_subst_label_id : forall x t l,
+  is_l_of_t l ->
+  tsubst_t t x l = l.
+Proof.
+  intros.  induction l; auto; inversion H.
 Qed. 
 
 Lemma erase_term_idempotent : forall l t1,
@@ -605,7 +545,6 @@ Proof.
      simpl. inversion IHt1_1. reflexivity.
      auto. 
      auto. 
-     simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
@@ -644,7 +583,6 @@ Proof.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
-     simpl. inversion IHt1_1. reflexivity.
     SCase "LB". simpl.
      destruct t1_1. simpl. rewrite <- IHt1_2; reflexivity.
      auto. auto. auto. auto. auto. auto. auto.
@@ -659,13 +597,11 @@ Proof.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
-
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      auto. 
      auto. 
-     simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
@@ -709,7 +645,6 @@ Proof.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
      simpl. inversion IHt1_1. reflexivity.
-     simpl. inversion IHt1_1. reflexivity.
   Case "term_App". simpl. rewrite <- IHt1_1. rewrite <- IHt1_2. reflexivity.
   Case "term_Fix". simpl. rewrite <- IHt1. reflexivity.
   Case "term_IfEl". simpl. rewrite <- IHt1_1. rewrite <- IHt1_2. rewrite <- IHt1_3. reflexivity.
@@ -722,8 +657,6 @@ Proof.
   Case "term_Label". simpl. rewrite <- IHt1_1. rewrite <- IHt1_2. reflexivity.
   Case "term_UnLabel". simpl. rewrite <- IHt1. reflexivity.
   Case "term_ToLabeled". simpl. rewrite <- IHt1_1. rewrite <- IHt1_2. reflexivity.
-  Case "term_MkToLabeledTCB". simpl. rewrite <- IHt1_1.
-   rewrite <- IHt1_2. rewrite <- IHt1_3. rewrite <- IHt1_4. reflexivity.
 Qed.
 
 Hint Resolve erase_term_idempotent.
@@ -752,6 +685,12 @@ Lemma tsubst_t_homo_if : forall (b : bool) t1 t2 t3  x,
 Proof. intros. destruct b; eauto. 
 Qed.
 
+Lemma tsubst_t_homo_if' : forall l1 l2 t1 t2 t3  x,
+  tsubst_t t1 x (if canFlowTo l1 l2 === Some true then t2 else t3) =
+  if canFlowTo (tsubst_t t1 x l1) (tsubst_t t1 x l2) === Some true
+    then (tsubst_t t1 x t2) else (tsubst_t t1 x t3).
+Admitted.
+
 Lemma erase_term_homo_subst : forall l t1 x t2,
   is_l_of_t l ->
   erase_term l (tsubst_t t1 x t2) = tsubst_t (erase_term l t1) x (erase_term l t2).
@@ -761,7 +700,15 @@ Proof.
   term_cases (induction t2) Case; intros t1; eauto.
   Case "term_VAbs". simpl. rewrite IHt2. reflexivity.
   Case "term_VLIO". simpl. rewrite IHt2. reflexivity.
-  Case "term_VLabeled". admit.
+  Case "term_VLabeled". simpl. 
+    rewrite tsubst_t_homo_if'.
+    simpl. 
+    rewrite IHt2_1.
+    assert (tsubst_t (erase_term l t1) x l = l) as Hrwrt.
+    SCase "assertion". rewrite t_subst_label_id. reflexivity. assumption.
+    rewrite -> Hrwrt.
+    rewrite IHt2_2.
+    reflexivity.
   Case "term_Var". simpl.
     assert (erase_term l (if eq_termvar x0 x then t1 else t_Var x0) =
             if eq_termvar x0 x then erase_term l t1 else erase_term l (t_Var x0)) as Hr.
@@ -779,8 +726,8 @@ Proof.
   Case "term_Label". simpl. rewrite IHt2_1. rewrite IHt2_2. reflexivity.
   Case "term_UnLabel". simpl. rewrite IHt2. reflexivity.
   Case "term_ToLabeled". simpl. rewrite IHt2_1. rewrite IHt2_2. reflexivity.
-  Case "term_MkToLabeledTCB". simpl. rewrite IHt2_1. rewrite IHt2_2. rewrite IHt2_3. rewrite IHt2_4. reflexivity.
 Qed.
+
 Hint Resolve erase_term_homo_subst.
 
 Lemma erase_hole_implies_anything: forall l l1 t1,
