@@ -497,7 +497,7 @@ Qed.
    and clearance since they are protected by the current labe. *)
 Definition erase_config (l : t) (cfg : m) : m :=
   match cfg with
-   | m_Config l1 c1 t1 n1 => if canFlowTo l1 l
+   | m_Config l1 c1 t1 n1 => if canFlowTo l1 l === Some true
                               then m_Config l1 c1 (erase_term l t1) n1
                               else m_Config t_VHole t_VHole t_VHole n1
   end.
@@ -736,7 +736,8 @@ Lemma erase_hole_implies_anything: forall l l1 t1,
   canFlowTo l1 l = Some false ->
   erase_term l (t_VLabeled l1 t_VHole) = erase_term l (t_VLabeled l1 t1).
 Proof.
-  intros. simpl. rewrite H1. simpl. reflexivity.
+  intros. simpl. rewrite -> erase_label_id. rewrite H1. simpl. reflexivity.
+  assumption. assumption.
 Qed. 
 
 
@@ -950,7 +951,6 @@ Proof.
     Case "term_Label". inversion H.
     Case "term_UnLabel". inversion H.
     Case "term_ToLabeled". inversion H.
-    Case "term_MkToLabeledTCB". inversion H.
 Qed.
 
 Lemma pure_reduce_simulation : forall l t1 t2,
@@ -1270,7 +1270,6 @@ Proof.
     Case "term_Label". inversion H.
     Case "term_UnLabel". inversion H.
     Case "term_ToLabeled". inversion H.
-    Case "term_MkToLabeledTCB". inversion H.
 Qed.
 
 (* -->L *)
@@ -1307,6 +1306,16 @@ Lemma erase_config_idempotent : forall l m1,
   is_l_of_t l ->
   erase_config l m1 = erase_config l (erase_config l m1).
 Proof.
+  intros.
+  destruct m1.
+  unfold erase_config.
+  remember (canFlowTo t1 l === Some true).  destruct b.
+  Case "t1 [= l".
+  rewrite <- Heqb.
+  rewrite <- erase_term_idempotent.
+  reflexivity. assumption.
+  Case "t1 [/= l".
+  simpl. reflexivity.
 Admitted.
 
 Lemma inv_erase_labeled : forall l l1 (t2 : t),
@@ -1317,22 +1326,226 @@ Lemma inv_erase_labeled : forall l l1 (t2 : t),
 Proof.
 Admitted.
 
-Lemma inv_erase_conf : forall l l1 c1 (t2 : t),
+Lemma inv_erase_conf0 : forall l l1 c1 (t2 : t) n1,
   is_l_of_t l ->
   is_l_of_t l1 ->
   is_l_of_t c1 ->
-  not (canFlowTo l1 l = Some true) ->
-  m_Config t_VHole t_VHole t_VHole = erase_config l (m_Config l1 c1 t2).
+  (canFlowTo l1 l === Some true) = false ->
+  m_Config t_VHole t_VHole t_VHole n1 = erase_config l (m_Config l1 c1 t2 n1).
 Proof.
+  intros.
+  simpl.
+  rewrite H2.
+  reflexivity.
 Admitted.
 
-
-Lemma inv_erase_return : forall l l1 c1 (t2 : t),
+Lemma inv_erase_conf1 : forall l l1 c1 t1 n1,
   is_l_of_t l1 ->
   is_l_of_t c1 ->
   is_l_of_t l ->
-  m_Config l1 c1 (t_Return (erase_term l t2)) = erase_config l (m_Config l1 c1 (t_Return t2)).
-Proof. Admitted.
+  (canFlowTo l1 l === Some true) = true ->
+  m_Config l1 c1 (erase_term l t1) n1 = erase_config l (m_Config l1 c1 t1 n1).
+Proof. 
+  intros.
+  simpl.
+  rewrite H2.
+  reflexivity.
+Qed.
+  
+
+Lemma inv_erase_return : forall l l1 c1 (t2 : t) n1,
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l ->
+  (canFlowTo l1 l === Some true) = true ->
+  m_Config l1 c1 (t_Return (erase_term l t2)) n1 = erase_config l (m_Config l1 c1 (t_Return t2) n1).
+Proof. 
+  intros.
+  simpl.
+  rewrite H2.
+  reflexivity.
+Qed.
+
+Lemma inv_erase_bind : forall l l1 c1 t2 t3 n1,
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l ->
+  (canFlowTo l1 l === Some true) = true ->
+  m_Config l1 c1 (t_Bind (erase_term l t2) (erase_term l t3)) n1
+  = erase_config l (m_Config l1 c1 (t_Bind t2 t3) n1).
+Proof. 
+  intros.
+  simpl.
+  rewrite H2.
+  reflexivity.
+Qed.
+
+Lemma lio_reduce_simulation_0 : forall l l1 c1 t1 l2 c2 t2,
+  is_l_of_t l ->
+  lio_reduce (m_Config l1 c1 t1 0) (m_Config l2 c2 t2 0) ->
+  lio_reduce_l l (erase_config l (m_Config l1 c1 t1 0)) (erase_config l (m_Config l2 c2 t2 0)).
+Proof.
+  intros l l1 c1 t1 l2 c2 t2 l_of_t H.
+  generalize dependent t2.
+  generalize dependent c2.
+  generalize dependent l2.
+  term_cases (induction t1) Case; intros l2 c2 t2 H.
+    Case "term_LBot". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_LA". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_LB". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_LTop". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VTrue". apply values_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VFalse". apply values_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VUnit". apply values_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VAbs". inversion H. 
+    Case "term_VLIO". inversion H.
+    Case "term_VLabeled". inversion H.
+    Case "term_VHole". inversion H.
+     apply lio_reduce_l_step. assumption. simpl. apply LIO_hole. 
+    Case "term_Var". inversion H.
+    Case "term_App".  inversion H.
+    Case "term_Fix". inversion H.
+    Case "term_IfEl". inversion H.
+    Case "term_Join". inversion H.
+    Case "term_Meet". inversion H.
+    Case "term_CanFlowTo". inversion H.
+    Case "term_Return". inversion H. 
+     subst.  
+     rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_VLIO t1) 0).
+     simpl. destruct (canFlowTo l2 l === Some true).
+     SCase "l2 [= l". 
+     apply lio_reduce_l_step. assumption. apply LIO_return. assumption. assumption.
+     SCase "t1 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole.
+     assumption.
+   Case "term_Bind". (* inversion H.
+     SCase "bindCtx". subst.
+     simpl. remember (canFlowTo l1 l === Some true). destruct b.
+     SSCase "l1 [= l".
+     remember (canFlowTo l2 l === Some true). destruct b.
+     SSSCase "l2 [= l".
+     apply LIO_bindCtx. assumption. assumption. assumption. assumption.
+     rewrite inv_erase_conf1.
+     rewrite inv_erase_conf1.
+     apply IHt1_1. assumption. assumption. assumption. assumption.
+     rewrite <- Heqb0. reflexivity.
+     assumption. assumption. assumption.
+     rewrite <- Heqb. reflexivity.
+     trivial.
+     SSSCase "l2 [/= l". admit.
+     SSCase "l1 [/= l".
+     remember (canFlowTo l2 l === Some true). destruct b.
+     SSSCase "l2 [= l". (* motonicity *) admit.
+     SSSCase "l2 [/= l". apply LIO_hole.
+     SCase "bind". subst.
+     simpl. remember (canFlowTo l2 l === Some true). destruct b.
+     SSCase "l2 [= l".
+     apply LIO_bind. assumption. assumption. 
+     SSCase "l2 [/= l".
+     apply LIO_hole. *)
+     admit.
+    Case "term_GetLabel". inversion H.
+      subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_Return l2) 0).
+      simpl. destruct (canFlowTo l2 l === Some true).
+      SCase "l2 [= l". apply lio_reduce_l_step. assumption.
+      rewrite erase_label_id. apply LIO_getLabel. assumption. assumption. assumption. assumption.
+      SCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
+    Case "term_GetClearance". inversion H.
+      subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_Return c2) 0).
+      simpl. destruct (canFlowTo l2 l === Some true).
+      SCase "l2 [= l". apply lio_reduce_l_step. assumption.
+      rewrite erase_label_id. apply LIO_getClearance. assumption. assumption. assumption. assumption.
+      SCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
+    Case "term_LabelOf". inversion H.
+    Case "term_Label". inversion H.
+      SCase "labelCtx".
+      subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_Label t1' t1_2) 0).
+      simpl. 
+      destruct (canFlowTo l2 l === Some true).
+      SSCase "l2 [= l". apply lio_reduce_l_step. assumption.
+      apply LIO_labelCtx. assumption. assumption. 
+      apply pure_reduce_simulation_helper. assumption. assumption. 
+      SSCase "t1 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
+      SCase "label". subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_Return (t_VLabeled t1_1 t1_2)) 0).
+      simpl. remember (canFlowTo l2 l === Some true). destruct b.
+      SSCase "l2 [= l". 
+       assert (erase_term l t1_1 = t1_1) as Hrwrt. 
+       SSSCase "assertion". rewrite erase_label_id. reflexivity. assumption. assumption.
+       rewrite -> Hrwrt.
+       remember (canFlowTo t1_1 l === Some true). destruct b.
+       SSSCase "t1_1 [= l". apply lio_reduce_l_step. assumption.
+       apply LIO_label. assumption. assumption. assumption. assumption. assumption. 
+       SSSCase "t1_1 [/= l". 
+       rewrite inv_erase_labeled with (l := l) (l1 := t1_1) (t2 := (erase_term l t1_2)).
+       rewrite inv_erase_return.
+       rewrite <- erase_config_idempotent.
+       apply lio_reduce_l_step. assumption.
+       apply LIO_label. assumption. assumption. assumption. assumption. assumption.
+       assumption. assumption. assumption. assumption. eauto.
+       assumption. assumption. eauto.
+      SSCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
+    Case "term_UnLabel". inversion H.
+      SCase "unlabelCtx".
+      subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_UnLabel t') 0).
+      simpl. remember (canFlowTo l2 l === Some true). destruct b.
+      SSCase "l2 [= l". apply lio_reduce_l_step. assumption.
+      apply LIO_unlabelCtx. assumption. assumption. 
+      apply pure_reduce_simulation_helper. assumption. assumption. 
+      SSCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
+      SCase "unlabel".
+      subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_Return t0) 0).
+      simpl. destruct (canFlowTo l1 l === Some true).
+      SSCase "l1 [= l".  remember (canFlowTo l2 l === Some true). destruct b.
+      SSSCase "l2 [= l". 
+      assert (erase_term l l0 = l0) as Hrwrt. 
+      SSSSCase "assertion". rewrite erase_label_id. reflexivity. assumption. assumption.
+      rewrite -> Hrwrt.
+      remember (canFlowTo l0 l === Some true). destruct b.
+      SSSSCase "l0 [= l".
+      apply lio_reduce_l_step. assumption.
+      apply LIO_unlabel. assumption. assumption. 
+      assumption. assumption. assumption. assumption. 
+      SSSSCase "l0 [/= l".
+       (* l0 [/= l
+          l2 [= l
+          l1 [= l
+          l2 = l1 |_| l0
+          => contradiction (l0 should flow to l if l2 = l1 |_| l0 and l2 [= l) *)
+        admit.
+      SSSCase "l2 [/= l".
+      assert (erase_term l l0 = l0) as Hrwrt. 
+      SSSSCase "assertion". rewrite erase_label_id. reflexivity. assumption. assumption.
+      rewrite -> Hrwrt.
+      remember (canFlowTo l0 l === Some true). destruct b.
+      SSSSCase "l0 [= l". 
+      rewrite inv_erase_conf0 with (l := l) (l1 := l2) (c1 := c2) (t2 := t_Return (erase_term l t0)).
+      rewrite <- erase_config_idempotent.
+      apply lio_reduce_l_step. assumption.
+      apply LIO_unlabel. assumption. assumption. assumption. assumption.
+      assumption. assumption. assumption. assumption. assumption. assumption. eauto.
+      SSSSCase "l0 [/= l".
+      rewrite inv_erase_conf0 with (l := l) (l1 := l2) (c1 := c2) (t2 := t_Return t_VHole).
+      rewrite <- erase_config_idempotent.
+      apply lio_reduce_l_step. assumption. 
+      apply LIO_unlabel.
+      assumption. assumption. assumption.
+      assumption. assumption. assumption.
+      assumption. assumption. assumption.
+      assumption. eauto. 
+      SSCase "l1 [/= l".  remember (canFlowTo l2 l === Some true).
+      destruct b.
+      SSSCase "l2 [= l". 
+       (* l2 [= l
+          l1 [/=l
+          l2 = l1 |_| l0
+          => contradiction : l1 should [= l since l2 [= l and l2 = l1 |_| l0*)
+       admit.
+      SSSCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.      
 
 (*
 Lemma lio_reduce_simulation_helper : forall l m1 m2,

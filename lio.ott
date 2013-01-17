@@ -419,6 +419,10 @@ defns
     ------------------------------------------------------- :: unlabel
     conf l c unlabel (Lb l1 t2) n --> conf l2 c return t2 n
 
+		t1 ~> t1'
+    ---------------------------------------------------------- :: toLabeledCtx
+    conf l c toLabeled t1 t2 n --> conf l c toLabeled t1' t2 n
+
     canFlowTo l l1 ~> true
     canFlowTo l1 c ~> true
     conf l c t n -->* conf l' c' return t' n'
@@ -573,6 +577,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_label"
   | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
+  | Case_aux c "LIO_toLabeledCtx"
   | Case_aux c "LIO_toLabeled"
   | Case_aux c "LIO_hole" ].
 

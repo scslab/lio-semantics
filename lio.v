@@ -460,6 +460,11 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      pure_reduce (t_Join l_5 l1) l2 ->
      pure_reduce (t_CanFlowTo l2 c) t_VTrue ->
      lio_reduce (m_Config l_5 c (t_UnLabel  (t_VLabeled l1 t2) ) n5) (m_Config l2 c (t_Return t2) n5)
+ | LIO_toLabeledCtx : forall (l5 c t1 t2:t) (n5:n) (t1':t),
+     is_l_of_t l5 ->
+     is_l_of_t c ->
+     pure_reduce t1 t1' ->
+     lio_reduce (m_Config l5 c (t_ToLabeled t1 t2) n5) (m_Config l5 c (t_ToLabeled t1' t2) n5)
  | LIO_toLabeled : forall (l_5 c l1 t5:t) (n5:n) (t':t) (n'':n) (l' c':t) (n':n),
      is_l_of_t l_5 ->
      is_l_of_t c ->
@@ -616,6 +621,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_label"
   | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
+  | Case_aux c "LIO_toLabeledCtx"
   | Case_aux c "LIO_toLabeled"
   | Case_aux c "LIO_hole" ].
 
