@@ -54,27 +54,6 @@ Proof.
   induction v; repeat (solve by inversion).
 Qed.
 
-(* NO!
-Lemma values_cannot_be_lio_reduced_multi : forall l c v n m,
-  is_v_of_t v ->
-  ~ (lio_reduce_multi (m_Config l c v n) m).
-Proof.
-  intros l c v n m H1.
-  unfold not.
-  intro H2.
-  inversion H2.
-  apply values_cannot_be_lio_reduced in H10. solve by inversion. assumption.
-  subst.
-  induction v; repeat (solve by inversion).
-  inversion H2.
-  subst.
-  apply values_cannot_be_lio_reduced in H10. solve by inversion. assumption.
-  subst.
-  apply LIO_done in H2.
-  induction v; repeat (solve by inversion).
-Qed.
-*)
-
 Hint Resolve values_cannot_be_lio_reduced.
 
 Corollary labels_cannot_be_lio_reduced : forall l c v n m, 
@@ -100,7 +79,6 @@ Proof.
    SCase "Pr_app". subst t3. subst. solve by inversion. 
   Case "Pr_app". inversion Hy2. subst t3. solve by inversion.  reflexivity.
   Case "Pr_fixCtx". inversion Hy2. subst t5. apply IHHy1 in H0. subst t'0. reflexivity.
-
   subst. inversion Hy1.
   Case "Pr_fix". inversion Hy2.  solve by inversion. reflexivity.
   Case "Pr_ifCtx". inversion Hy2. apply IHHy1 in H3. subst. reflexivity. 
@@ -359,8 +337,17 @@ Proof.
     assert (l2 = l3).
     SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
     subst l3. reflexivity.
+  Case "LIO_toLabeledCtx".
+    inversion Hy2.
+    subst.
+    assert (t1' = t1'0) as Hrwrt.
+    SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
+    subst t1'0. reflexivity.
+    apply labels_cannot_be_reduced in H1. contradiction. assumption.
   Case "LIO_toLabeled".
     inversion Hy2.
+    subst.
+    apply labels_cannot_be_reduced in H18. contradiction. assumption.
     subst.
     assert (l' = l'0 /\ c' = c'0 /\ t' = t'0 /\ n' = n'0) as Hrwrt.
     apply deterministic_lio_reduce_multi with (l := l_5) (c := c) (t0 := t5) (n0 := n5).
