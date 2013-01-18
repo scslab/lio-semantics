@@ -955,7 +955,6 @@ Proof.
     Case "term_LTop". apply labels_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VTrue". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VFalse". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
-
     Case "term_VUnit". apply values_cannot_be_reduced in H. contradiction. simpl. trivial.
     Case "term_VAbs". inversion H. 
     Case "term_VLIO". inversion H.
@@ -1533,13 +1532,30 @@ Proof.
           => contradiction : l1 should [= l since l2 [= l and l2 = l1 |_| l0*)
        admit.
       SSSCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.      
+    Case "term_ToLabeled". inversion H.
+      SCase "toLabeledCtx".
+      subst.
+      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_ToLabeled t1' t1_2) 0).
+      simpl. remember (canFlowTo l2 l === Some true). destruct b.
+      SSCase "l2 [= l". apply lio_reduce_l_step. assumption.
+      apply LIO_toLabeledCtx. assumption. assumption. 
+      apply pure_reduce_simulation_helper. assumption. assumption. 
+      SSCase "l2 [/= l". apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
+      SCase "toLabeled".
+      subst.
+      assert (0 = n' + 1 -> False).
+      omega.
+      apply H0 in H18.
+      contradiction.
+Qed.
 
+      
 (*
 Lemma lio_reduce_simulation_helper : forall l m1 m2,
   is_l_of_t l ->
   lio_reduce m1 m2 ->
   lio_reduce (erase_config l m1) (erase_config l m2).
-Proof.
+
   intros l m1 m2 l_of_t H.
   generalize dependent m2.
   destruct m1.
@@ -1656,7 +1672,7 @@ Proof.
       rewrite erase_config_idempotent with (m1 := m_Config t_VHole t_VHole t_VHole).
       apply lio_reduce_l_step. assumption. apply LIO_hole. assumption.
     Case "term_Var". inversion H.
-    Case "term_App".  inversion H.
+
     Case "term_Fix". inversion H.
     Case "term_IfEl". inversion H.
     Case "term_Join". inversion H.
