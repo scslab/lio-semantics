@@ -255,33 +255,19 @@ Hint Resolve deterministic_pure_reduce.
 
 
 Lemma deterministic_lio_reduce_multi : forall l c t n l1 c1 t1 n1 l2 c2 t2 n2,
-  lio_reduce_multi (m_Config l c t n) (m_Config l1 c1 (t_Return t1) n1) ->
-  lio_reduce_multi (m_Config l c t n) (m_Config l2 c2 (t_Return t2) n2) ->
+  lio_reduce_multi (m_Config l c t n) (m_Config l1 c1 (t_VLIO t1) n1) ->
+  lio_reduce_multi (m_Config l c t n) (m_Config l2 c2 (t_VLIO t2) n2) ->
   l1 = l2 /\ c1 = c2 /\ t1 = t2 /\ n1 = n2.
 Proof.
   intros.
   term_cases (induction t) Case; try (inversion H; inversion H13).
-  Case "term_Return". 
+  Case "term_VLIO". 
     inversion H. subst. inversion H13. subst.
     inversion H0. subst. inversion H15. subst.
     eauto.
-  Case "term_GetLabel". 
+  Case "term_Return". 
     inversion H. subst. inversion H13. subst.
     inversion H0. subst. inversion H21. subst.
-    eauto.
-  Case "term_GetClearance". 
-    inversion H. subst. inversion H13. subst.
-    inversion H0. subst. inversion H21. subst.
-    eauto.
-  Case "term_Label". 
-    subst.
-    inversion H. subst. inversion H18. subst.
-    inversion H0. subst. inversion H33. subst.
-    eauto.
-  Case "term_UnLabel". 
-    subst.
-    inversion H. subst. inversion H18. subst.
-    inversion H0. subst. inversion H35. subst.
     eauto.
 Qed.
 

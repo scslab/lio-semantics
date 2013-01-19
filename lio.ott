@@ -425,7 +425,7 @@ defns
 
     canFlowTo l l1 ~> true
     canFlowTo l1 c ~> true
-    conf l c t n -->* conf l' c' return t' n'
+    conf l c t n -->* conf l' c' LIO t' n'
     n <= n'
 		n'' = succ n'
 		canFlowTo l' l1 ~> true

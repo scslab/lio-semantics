@@ -473,7 +473,7 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      is_l_of_t c' ->
      pure_reduce (t_CanFlowTo l_5 l1) t_VTrue ->
      pure_reduce (t_CanFlowTo l1 c) t_VTrue ->
-     lio_reduce_multi (m_Config l_5 c t5 n5) (m_Config l' c' (t_Return t') n') ->
+     lio_reduce_multi (m_Config l_5 c t5 n5) (m_Config l' c' (t_VLIO t') n') ->
       n5 <= n'  ->
       n'' = n' +1  ->
      pure_reduce (t_CanFlowTo l' l1) t_VTrue ->
