@@ -1537,13 +1537,12 @@ Proof.
       contradiction.
 Qed.
 
-(*
 Lemma lio_reduce_simulation_0_helper': forall l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   l1 [= l ->
   l2 [/= l ->
   lio_reduce (m_Config l1 c1 t1 0) (m_Config l2 c2 t2 0) ->
-  lio_reduce (erase_config l (m_Config l1 c1 t1 0)) (erase_config l (m_Config l2 c2 t2 0)).
+  lio_reduce (m_Config l1 c1 (erase_term l t1) 0) (m_Config l2 c2 (erase_term l t2) 0).
 Proof.
   intros l l1 c1 t1 l2 c2 t2 l_of_t l1_to_l not_l2_to_l H.
   generalize dependent t2.
@@ -1567,38 +1566,29 @@ Proof.
     Case "term_Join". inversion H.
     Case "term_Meet". inversion H.
     Case "term_CanFlowTo". inversion H.
-    Case "term_Return". inversion H. 
-     subst.  
-     simpl. rewrite not_l2_to_l.
-     apply LIO_hole.
+    Case "term_Return". inversion H. subst.  
+     simpl. apply LIO_return. assumption. assumption.
     Case "term_Bind". inversion H. 
      SCase "bindCtx".
-     subst.  
-     simpl. rewrite l1_to_l. rewrite not_l2_to_l.
+     subst. simpl. 
      apply LIO_bindCtx. assumption. assumption. assumption. assumption.
-     rewrite inv_erase_conf1.
-     rewrite inv_erase_conf1.
      apply IHt1_1.
-     assumption. assumption. assumption. assumption. assumption.
-     assumption. assumption. assumption. assumption. assumption.
+     assumption. assumption. 
      SCase "bind".
-     subst. simpl.
-     rewrite l1_to_l. apply LIO_bind.
+     subst. simpl. apply LIO_bind.
      assumption. assumption.
     Case "term_GetLabel". inversion H. 
      subst.  
-     simpl. rewrite l2_to_l.
-     rewrite erase_label_id.
+     simpl. rewrite erase_label_id.
      apply LIO_getLabel. assumption. assumption. assumption. assumption.
     Case "term_GetClearance". inversion H. 
      subst.  
-     simpl. rewrite l2_to_l.
-     rewrite erase_label_id.
+     simpl. rewrite erase_label_id.
      apply LIO_getClearance. assumption. assumption. assumption. assumption.
     Case "term_LabelOf". inversion H.
     Case "term_Label". inversion H.
      SCase "labelCtx".
-     subst. simpl. rewrite l2_to_l.
+     subst. simpl. 
      assert (canFlowTo (erase_term l t1_1) l = canFlowTo (erase_term l t1') l).
      SSCase "assertion". (* reducing label does not affect its value *) admit.
      rewrite H0.
@@ -1614,7 +1604,7 @@ Proof.
      apply pure_reduce_simulation_helper.
      assumption. assumption. 
      SCase "label".
-     subst. simpl. rewrite l2_to_l.
+     subst. simpl. 
        assert (erase_term l t1_1 = t1_1) as Hrwrt. 
        SSSCase "assertion". rewrite erase_label_id. reflexivity. assumption. assumption.
        rewrite -> Hrwrt.
@@ -1626,12 +1616,12 @@ Proof.
        apply LIO_label. assumption. assumption. assumption. assumption. assumption.
     Case "term_UnLabel". inversion H.
       SCase "unlabelCtx".
-      subst. simpl. rewrite l2_to_l.
+      subst. simpl. 
       apply LIO_unlabelCtx. assumption. assumption.
       apply pure_reduce_simulation_helper.
       assumption. assumption. 
       SCase "unlabel".
-      subst. simpl. rewrite l1_to_l. rewrite l2_to_l.
+      subst. simpl. 
       assert (erase_term l l0 = l0) as Hrwrt. 
       SSSCase "assertion". rewrite erase_label_id. reflexivity. assumption. assumption.
       rewrite -> Hrwrt.
@@ -1642,13 +1632,13 @@ Proof.
       SSSCase "l0 [/= l". 
       (* l2 = l1 |_| l0
           l1 [= l
-          l2 [= l
+          l2 [/= l
           l0 [/= l
-          contradiction l0 [=l since l2 [= l, i.e, l1 |_| l0 [= l *)
+          contradiction l2 [=l since l2 = l1 |_| l0 and  l1 [= l *)
       admit.
     Case "term_ToLabeled". inversion H.
       SCase "toLabeledCtx".
-      subst. simpl. rewrite l2_to_l.
+      subst. simpl. 
       apply LIO_toLabeledCtx. assumption. assumption.
       apply pure_reduce_simulation_helper.
       assumption. assumption. 
@@ -1659,8 +1649,6 @@ Proof.
       apply H0 in H18.
       contradiction.
 Qed.
-*)
-
 
 Lemma lio_reduce_simulation_0 : forall l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
@@ -1739,7 +1727,24 @@ Proof.
      SSSSCase "term_Return". inversion H13. 
      subst.
      rewrite <- Heqb0  in Heqb. solve by inversion.
-     SSSSCase "term_Bind". admit.
+     SSSSCase "term_Bind". inversion H13.
+     SSSSSCase "bindCtx". subst.
+     rewrite inv_erase_conf0 with (l := l) (l1 := l2) (c1 := c2) (t2 := 
+       (t_Bind (erase_term l (t_Bind t1'0 t1_1_2)) (erase_term l t1_2))) (n1 := 0).
+     rewrite <- erase_config_idempotent.
+     apply lio_reduce_l_step.
+     assumption.
+     apply LIO_bindCtx.
+     assumption. assumption. assumption. assumption.
+     simpl.
+     apply LIO_bindCtx.
+     assumption. assumption. assumption. assumption.
+     subst.
+     apply lio_reduce_simulation_0_helper'.
+     assumption. eauto. eauto. assumption. assumption. assumption.
+     assumption. assumption. assumption. assumption. eauto.
+     SSSSSCase "bind". subst.
+     rewrite <- Heqb0  in Heqb. solve by inversion.
      SSSSCase "term_GetLabel". inversion H13. 
      subst.
      rewrite <- Heqb0 in Heqb. solve by inversion.
@@ -1758,7 +1763,6 @@ Proof.
      SSSSSCase "unlabelCtx".
      subst.
      rewrite <- Heqb0 in Heqb. solve by inversion.
-     (* ----------------------------------------------------------- *)
      SSSSSCase "unlabel".
      subst.
      simpl.
@@ -1785,7 +1789,6 @@ Proof.
      assumption. assumption. assumption. assumption.
      assumption. assumption. assumption. assumption.
      assumption. assumption. eauto.
-     (* ----------------------------------------------------------- *)
      SSSSCase "term_ToLabeled". inversion H13. 
      SSSSSCase "toLabeledCtx".
      subst.
