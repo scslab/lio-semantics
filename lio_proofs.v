@@ -409,6 +409,23 @@ Axiom canFlowToSyntaxRel : forall l1 l2,
   (canFlowTo l1 l2 === Some true) = true <->
   pure_reduce (t_CanFlowTo l1 l2) t_VTrue.
 
+Lemma canFlowTo_reflexive : forall l, 
+  is_l_of_t l ->
+  canFlowTo l l === Some true = true.
+Proof.
+  intros. induction l; try repeat (unfold canFlowTo; trivial); inversion H.
+Qed.
+
+Lemma canFlowTo_transitivie : forall l1 l2 l3, 
+  is_l_of_t l1 ->
+  is_l_of_t l2 ->
+  is_l_of_t l3 ->
+  canFlowTo l1 l2 === Some true = true ->
+  canFlowTo l2 l3 === Some true = true ->
+  canFlowTo l1 l3 === Some true = true.
+Proof. (* boring *)
+Admitted.
+  
 Fixpoint erase_term (l term : t) : t :=
   match term with
    | t_LBot            => t_LBot
@@ -1352,56 +1369,31 @@ Proof.
   reflexivity.
 Qed.
 
-(*
-Lemma inv_lio_reduce_l : forall l m1 m2,
-  is_l_of_t l ->
-  lio_reduce_l l m1 (erase_config l m2) ->
-  lio_reduce (erase_config l m1) (erase_config l m2).
+Lemma current_label_monotonicity : forall l1 c1 t1 n1 l2 c2 t2 n2,
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l2 ->
+  is_l_of_t c2 ->
+  lio_reduce (m_Config l1 c1 t1 n1) (m_Config l2 c2 t2 n2) ->
+  (canFlowTo l1 l2 === Some true) = true.
 Proof.
-  intros.
-  inversion H0.
-  subst.
-  destruct m1.
-  destruct m2.
-  generalize dependent n5.
-  generalize dependent t3.
+  intros.  
+  generalize dependent n2.
   generalize dependent t2.
-  generalize dependent t1.
-  term_cases (induction t3) Case; intros.
-  apply labels_cannot_be_lio_reduced in H5. contradiction. unfold is_l_of_t. trivial.
-  apply labels_cannot_be_lio_reduced in H5. contradiction. unfold is_l_of_t. trivial.
-  apply labels_cannot_be_lio_reduced in H5. contradiction. unfold is_l_of_t. trivial.
-  apply labels_cannot_be_lio_reduced in H5. contradiction. unfold is_l_of_t. trivial.
-  apply values_cannot_be_lio_reduced in H5. contradiction. unfold is_v_of_t. trivial.
-  apply values_cannot_be_lio_reduced in H5. contradiction. unfold is_v_of_t. trivial.
-  apply values_cannot_be_lio_reduced in H5. contradiction. unfold is_v_of_t. trivial.
-  apply values_cannot_be_lio_reduced in H5. contradiction. unfold is_v_of_t. trivial.
-  apply values_cannot_be_lio_reduced in H5. contradiction. unfold is_v_of_t. trivial.
-  apply values_cannot_be_lio_reduced in H5. contradiction. unfold is_v_of_t. trivial.
-  Case "term_VHole". inversion H5. subst. simpl. apply LIO_hole.
-  Case "term_Var". inversion H5.
-  Case "term_App". inversion H5.
-  Case "term_Fix". inversion H5.
-  Case "term_IfEl". inversion H5.
-  Case "term_Join". inversion H5.
-  Case "term_Meet". inversion H5.
-  Case "term_CanFlowTo". inversion H5.
-  Case "term_Return". inversion H5. subst. simpl.
-  destruct (canFlowTo t1 l === Some true).
-  SCase "t1 [= l". apply LIO_return. assumption. assumption.
-  SCase "t1 [/= l". apply LIO_hole.
-  Case "term_Bind". inversion H5. subst. simpl.
-  destruct (canFlowTo t1 l === Some true).
-  SCase "t1 [= l".
-  destruct (canFlowTo l' l === Some true).
-  SSCase "l' [= l".
-  apply LIO_bindCtx. assumption. assumption. assumption. assumption.
-  admit.
-  assumption.
-  SSCase "l' [/= l".
-  apply LIO_bindCtx. assumption. assumption. assumption. assumption.
-*)
+  generalize dependent c2.
+  generalize dependent l2.
+  generalize dependent n1.
+  generalize dependent c1.
+  generalize dependent l1.
+  induction t1; intros;
+  inversion H3; try repeat (subst; apply canFlowTo_reflexive; assumption).
+  subst.
+  apply IHt1_1 in H17. assumption. assumption. assumption. assumption. assumption.
+  subst.
+  admit (* l2 = l1 |_| l0  and so l1 [= l2 *).
+Qed.
 
+  
 Lemma lio_reduce_simulation_0 : forall l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   lio_reduce (m_Config l1 c1 t1 0) (m_Config l2 c2 t2 0) ->
@@ -1468,14 +1460,16 @@ Proof.
      SSCase "l1 [/= l".
      remember (canFlowTo l2 l === Some true). destruct b.
      SSSCase "l2 [= l".
-     rewrite inv_erase_conf0 with (l := l) (l1 := l1) (c1 := c1) (t2 := t_Bind t1_1 t1_2).
-     rewrite inv_erase_bind.
-     apply lio_reduce_l_step. assumption.
-     apply IHt1_1 in H13.
-     admit.
+     assert ((canFlowTo l1 l2 === Some true) = true).
+     apply current_label_monotonicity with (l1 := l1) (c1 := c1) (t1 := t1_1) (n1 := 0) (l2 := l2) (c2 := c2) (t2 := t1') (n2 := 0). 
+     assumption. assumption.
+     assumption. assumption.
+     assumption. 
+     assert ((canFlowTo l1 l === Some true) = true).
+     apply canFlowTo_transitivie with (l1 := l1) (l2 := l2) (l3 := l).
      assumption. assumption. assumption.
-     eauto. assumption. assumption. assumption.
-     eauto. 
+     assumption. eauto.
+     rewrite H1 in Heqb. solve by inversion.
      SSSCase "l2 [/= l". 
      apply lio_reduce_l_step. assumption. apply LIO_hole.
      assumption.
@@ -1707,6 +1701,7 @@ Lemma lio_reduce_simulation_helper : forall l m1 m2,
 Qed.
 *)
 
+(*
 Lemma lio_reduce_simulation : forall l m1 m2,
   is_l_of_t l ->
   lio_reduce m1 m2 ->
@@ -1936,3 +1931,4 @@ Proof.
       apply lio_reduce_l_step. assumption.
       apply LIO_hole. assumption.
 Qed.
+*)
