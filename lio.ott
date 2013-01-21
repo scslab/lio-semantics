@@ -432,8 +432,8 @@ defns
     ------------------------------------------------------ :: toLabeled
     conf l c toLabeled l1 t n --> conf l c label l1 t' n''
 
-    ----------------------------------------------- :: hole
-    conf hole hole hole n --> conf hole hole hole n
+    --------------------------------------- :: hole
+    conf t1 t2 hole n --> conf t1 t2 hole n
 
     defn
     m1 -->* m2 ::  :: lio_reduce_multi :: LIO_  {{ com [[m1]] (big-step) reduces to [[m2]] }} by

@@ -1436,7 +1436,7 @@ Proof.
     Case "term_VAbs". inversion H. 
     Case "term_VLIO". inversion H.
     Case "term_VLabeled". inversion H.
-    Case "term_VHole". inversion H. simpl. apply LIO_hole. 
+    Case "term_VHole". inversion H. simpl. rewrite l2_to_l. apply LIO_hole. 
     Case "term_Var". inversion H.
     Case "term_App".  inversion H.
     Case "term_Fix". inversion H.
@@ -1652,14 +1652,21 @@ Qed.
 
 Lemma lio_reduce_simulation_0 : forall l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l2 ->
+  is_l_of_t c2 ->
   lio_reduce (m_Config l1 c1 t1 0) (m_Config l2 c2 t2 0) ->
   lio_reduce_l l (erase_config l (m_Config l1 c1 t1 0)) (erase_config l (m_Config l2 c2 t2 0)).
 Proof.
-  intros l l1 c1 t1 l2 c2 t2 l_of_t H.
+  intros l l1 c1 t1 l2 c2 t2 l_of_t_l l_of_t_l1 l_of_t_c1 l_of_t_l2 l_of_t_c2 H.
   generalize dependent t2.
   generalize dependent c2.
   generalize dependent l2.
-  term_cases (induction t1) Case; intros l2 c2 t2 H.
+  generalize dependent c1.
+  generalize dependent l1.
+  generalize dependent l_of_t_l.
+  term_cases (induction t1) Case; intros.
     Case "term_LBot". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
     Case "term_LA". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
     Case "term_LB". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
@@ -1671,7 +1678,12 @@ Proof.
     Case "term_VLIO". inversion H.
     Case "term_VLabeled". inversion H.
     Case "term_VHole". inversion H.
-     apply lio_reduce_l_step. assumption. simpl. apply LIO_hole. 
+     rewrite erase_config_idempotent with (m1 := m_Config l2 c2 t_VHole 0).
+     apply lio_reduce_l_step. assumption. simpl. 
+     subst. remember (canFlowTo l2 l === Some true). destruct b.
+     simpl. rewrite <- Heqb. apply LIO_hole. 
+     simpl. apply LIO_hole. 
+     assumption.
     Case "term_Var". inversion H.
     Case "term_App".  inversion H.
     Case "term_Fix". inversion H.
