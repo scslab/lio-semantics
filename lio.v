@@ -26,6 +26,15 @@ Proof.
 Defined.
 Hint Resolve eq_n : ott_coq_equality.
 
+Inductive T : Set :=  (*r type *)
+ | T_TBool : T (*r Boolean *)
+ | T_TUnit : T (*r unit *)
+ | T_TLabel : T (*r label *)
+ | T_TLIO (T5:T) (*r LIO action *)
+ | T_TLabeled (T5:T) (*r labeled value *)
+ | T_TVar (X:typvar) (*r variable *)
+ | T_TArrow (T5:T) (T':T) (*r function *).
+
 Inductive t : Set :=  (*r term *)
  | t_LBot : t (*r bottom *)
  | t_LA : t (*r medium-label *)
@@ -54,19 +63,10 @@ Inductive t : Set :=  (*r term *)
  | t_UnLabel (t5:t) (*r unlabel *)
  | t_ToLabeled (t1:t) (t2:t) (*r execute sensitive computation *).
 
-Inductive T : Set :=  (*r type *)
- | T_TBool : T (*r Boolean *)
- | T_TUnit : T (*r unit *)
- | T_TLabel : T (*r label *)
- | T_TLIO (T5:T) (*r LIO action *)
- | T_TLabeled (T5:T) (*r labeled value *)
- | T_TVar (X:typvar) (*r variable *)
- | T_TArrow (T5:T) (T':T) (*r function *).
+Definition G : Set := list (termvar*T).
 
 Inductive m : Set :=  (*r monadic LIO term *)
- | m_Config (t1:t) (t2:t) (t3:t) (n5:n) (*r configuration *).
-
-Definition G : Set := list (termvar*T).
+ | m_Config (t1:t) (t2:t) (t3:t) (*r configuration *).
 Notation G_nil := (@nil (termvar*T)).
 Definition bound x T0 G :=
   exists G1, exists G2,
@@ -169,7 +169,7 @@ end.
 
 Definition fv_m (m5:m) : list termvar :=
   match m5 with
-  | (m_Config t1 t2 t3 n5) => (app (fv_t t1) (app (fv_t t2) (fv_t t3)))
+  | (m_Config t1 t2 t3) => (app (fv_t t1) (app (fv_t t2) (fv_t t3)))
 end.
 
 
@@ -206,7 +206,7 @@ end.
 
 Definition tsubst_m (t_5:t) (x5:termvar) (m5:m) : m :=
   match m5 with
-  | (m_Config t1 t2 t3 n5) => m_Config (tsubst_t t_5 x5 t1) (tsubst_t t_5 x5 t2) (tsubst_t t_5 x5 t3) n5
+  | (m_Config t1 t2 t3) => m_Config (tsubst_t t_5 x5 t1) (tsubst_t t_5 x5 t2) (tsubst_t t_5 x5 t3)
 end.
 
 (** definitions *)
@@ -410,48 +410,54 @@ Inductive pure_reduce : t -> t -> Prop :=    (* defn pure_reduce *)
 (** definitions *)
 
 (* defns Jop *)
-Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
+Inductive lio_reduce : m -> n -> m -> Prop :=    (* defn lio_reduce *)
  | LIO_return : forall (l5 c t5:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
-     lio_reduce (m_Config l5 c (t_Return t5) n5) (m_Config l5 c (t_VLIO t5) n5)
- | LIO_bindCtx : forall (l5 c t1 t2:t) (n5:n) (l' c' t1':t) (n':n),
+      n5 =0  ->
+     lio_reduce (m_Config l5 c (t_Return t5)) n5 (m_Config l5 c (t_VLIO t5))
+ | LIO_bindCtx : forall (l5 c t1 t2:t) (n5:n) (l' c' t1':t),
      is_l_of_t l5 ->
      is_l_of_t c ->
      is_l_of_t l' ->
      is_l_of_t c' ->
-     lio_reduce (m_Config l5 c t1 n5) (m_Config l' c' t1' n') ->
-      n5 <= n'  ->
-     lio_reduce (m_Config l5 c (t_Bind t1 t2) n5) (m_Config l' c' (t_Bind t1' t2) n')
+     lio_reduce (m_Config l5 c t1) n5 (m_Config l' c' t1') ->
+     lio_reduce (m_Config l5 c (t_Bind t1 t2)) n5 (m_Config l' c' (t_Bind t1' t2))
  | LIO_bind : forall (l5 c t1 t2:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
-     lio_reduce (m_Config l5 c (t_Bind (t_VLIO t1) t2) n5) (m_Config l5 c  (t_App t2 t1)  n5)
+      n5 =0  ->
+     lio_reduce (m_Config l5 c (t_Bind (t_VLIO t1) t2)) n5 (m_Config l5 c  (t_App t2 t1) )
  | LIO_getLabel : forall (l5 c:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
-     lio_reduce (m_Config l5 c t_GetLabel n5) (m_Config l5 c (t_Return l5) n5)
+      n5 =0  ->
+     lio_reduce (m_Config l5 c t_GetLabel) n5 (m_Config l5 c (t_Return l5))
  | LIO_getClearance : forall (l5 c:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
-     lio_reduce (m_Config l5 c t_GetClearance n5) (m_Config l5 c (t_Return c) n5)
+      n5 =0  ->
+     lio_reduce (m_Config l5 c t_GetClearance) n5 (m_Config l5 c (t_Return c))
  | LIO_labelCtx : forall (l5 c t1 t2:t) (n5:n) (t1':t),
      is_l_of_t l5 ->
      is_l_of_t c ->
      pure_reduce t1 t1' ->
-     lio_reduce (m_Config l5 c (t_Label t1 t2) n5) (m_Config l5 c (t_Label t1' t2) n5)
+      n5 =0  ->
+     lio_reduce (m_Config l5 c (t_Label t1 t2)) n5 (m_Config l5 c (t_Label t1' t2))
  | LIO_label : forall (l_5 c l1 t2:t) (n5:n),
      is_l_of_t l_5 ->
      is_l_of_t c ->
      is_l_of_t l1 ->
      pure_reduce (t_CanFlowTo l_5 l1) t_VTrue ->
      pure_reduce (t_CanFlowTo l1 c) t_VTrue ->
-     lio_reduce (m_Config l_5 c (t_Label l1 t2) n5) (m_Config l_5 c (t_Return  (t_VLabeled l1 t2) ) n5)
+      n5 =0  ->
+     lio_reduce (m_Config l_5 c (t_Label l1 t2)) n5 (m_Config l_5 c (t_Return  (t_VLabeled l1 t2) ))
  | LIO_unlabelCtx : forall (l5 c t5:t) (n5:n) (t':t),
      is_l_of_t l5 ->
      is_l_of_t c ->
      pure_reduce t5 t' ->
-     lio_reduce (m_Config l5 c (t_UnLabel t5) n5) (m_Config l5 c (t_UnLabel t') n5)
+      n5 =0  ->
+     lio_reduce (m_Config l5 c (t_UnLabel t5)) n5 (m_Config l5 c (t_UnLabel t'))
  | LIO_unlabel : forall (l_5 c l1 t2:t) (n5:n) (l2:t),
      is_l_of_t l_5 ->
      is_l_of_t c ->
@@ -459,13 +465,15 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      is_l_of_t l2 ->
      pure_reduce (t_Join l_5 l1) l2 ->
      pure_reduce (t_CanFlowTo l2 c) t_VTrue ->
-     lio_reduce (m_Config l_5 c (t_UnLabel  (t_VLabeled l1 t2) ) n5) (m_Config l2 c (t_Return t2) n5)
+      n5 =0  ->
+     lio_reduce (m_Config l_5 c (t_UnLabel  (t_VLabeled l1 t2) )) n5 (m_Config l2 c (t_Return t2))
  | LIO_toLabeledCtx : forall (l5 c t1 t2:t) (n5:n) (t1':t),
      is_l_of_t l5 ->
      is_l_of_t c ->
      pure_reduce t1 t1' ->
-     lio_reduce (m_Config l5 c (t_ToLabeled t1 t2) n5) (m_Config l5 c (t_ToLabeled t1' t2) n5)
- | LIO_toLabeled : forall (l_5 c l1 t5:t) (n5:n) (t':t) (n'':n) (l' c':t) (n':n),
+      n5 =0  ->
+     lio_reduce (m_Config l5 c (t_ToLabeled t1 t2)) n5 (m_Config l5 c (t_ToLabeled t1' t2))
+ | LIO_toLabeled : forall (l_5 c l1 t5:t) (n':n) (t':t) (n5:n) (l' c':t),
      is_l_of_t l_5 ->
      is_l_of_t c ->
      is_l_of_t l1 ->
@@ -473,25 +481,26 @@ Inductive lio_reduce : m -> m -> Prop :=    (* defn lio_reduce *)
      is_l_of_t c' ->
      pure_reduce (t_CanFlowTo l_5 l1) t_VTrue ->
      pure_reduce (t_CanFlowTo l1 c) t_VTrue ->
-     lio_reduce_multi (m_Config l_5 c t5 n5) (m_Config l' c' (t_VLIO t') n') ->
-      n5 <= n'  ->
-      n'' = n' +1  ->
+     lio_reduce_multi (m_Config l_5 c t5) n5 (m_Config l' c' (t_VLIO t')) ->
+      n' = n5 +1  ->
      pure_reduce (t_CanFlowTo l' l1) t_VTrue ->
-     lio_reduce (m_Config l_5 c (t_ToLabeled l1 t5) n5) (m_Config l_5 c (t_Label l1 t') n'')
+     lio_reduce (m_Config l_5 c (t_ToLabeled l1 t5)) n' (m_Config l_5 c (t_Label l1 t'))
  | LIO_hole : forall (t1 t2:t) (n5:n),
-     lio_reduce (m_Config t1 t2 t_VHole n5) (m_Config t1 t2 t_VHole n5)
-with lio_reduce_multi : m -> m -> Prop :=    (* defn lio_reduce_multi *)
- | LIO_onestep : forall (l5 c t5:t) (n5:n) (l' c' t':t) (n':n),
+      n5 =0  ->
+     lio_reduce (m_Config t1 t2 t_VHole) n5 (m_Config t1 t2 t_VHole)
+with lio_reduce_multi : m -> n -> m -> Prop :=    (* defn lio_reduce_multi *)
+ | LIO_onestep : forall (l5 c t5:t) (n5:n) (l' c' t':t),
      is_l_of_t l5 ->
      is_l_of_t c ->
      is_l_of_t l' ->
      is_l_of_t c' ->
-     lio_reduce (m_Config l5 c t5 n5) (m_Config l' c' t' n') ->
-     lio_reduce_multi (m_Config l5 c t5 n5) (m_Config l' c' t' n')
+     lio_reduce (m_Config l5 c t5) n5 (m_Config l' c' t') ->
+     lio_reduce_multi (m_Config l5 c t5) n5 (m_Config l' c' t')
  | LIO_done : forall (l5 c t5:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
-     lio_reduce_multi (m_Config l5 c t5 n5) (m_Config l5 c t5 n5).
+      n5 =0  ->
+     lio_reduce_multi (m_Config l5 c t5) n5 (m_Config l5 c t5).
 Hint Constructors pure_reduce lio_reduce GtT : rules.
 
 Tactic Notation "label_cases" tactic(first) ident(c) :=

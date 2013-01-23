@@ -76,8 +76,8 @@ t :: 't_' ::=  {{ com term }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 m ::  'm_' ::= {{ com monadic LIO term }}
-    | conf t1 t2 t3 n       ::    :: Config      {{ com configuration }}
-                                                 {{ tex \langle [[t1]], [[t2]], [[t3]] \rangle_[[n]] }}
+    | conf t1 t2 t3        ::    :: Config      {{ com configuration }}
+                                                {{ tex \langle [[t1]], [[t2]], [[t3]] \rangle }}
 
 %{{{ TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 T {{ tex \tau }} :: T_ ::= {{ com type }}
@@ -111,6 +111,7 @@ formula :: 'formula_' ::=
                                                  {{ coq (not ([[formula]])) }}
     | t = t'                ::   :: eqv          {{ ich [[t]]=[[t']] }}
     | x : T in G            ::   :: xTG          {{ coq (bound [[x]] [[T]] [[G]])  }}
+    | n = 0                 ::   :: eqvN0        {{ ich [[n]]=0 }}
     | n = n'                ::   :: eqvN         {{ ich [[n]]=[[n']] }}
     | n <= n'               ::   :: leN          {{ ich [[n]]<=[[n']] }}
     | n = succ n'           ::   :: succ         {{ ich [[n]]=[[n']]+1 }} {{ tex [[n]]=[[n']]+1 }}
@@ -382,68 +383,77 @@ defns
   Jop :: '' ::=
 
     defn
-    m1 --> m2 ::  :: lio_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] }} by
+    m1 --> n m2 ::  :: lio_reduce :: LIO_       {{ com [[m1]] reduces to [[m2]] and executes [[n]] toLabeled-computations}} {{ tex [[m1]] \longrightarrow_[[n]] [[m2]] }} by
 
-    ---------------------------------------- :: return
-    conf l c return t n --> conf l c LIO t n
+		n = 0
+    -------------------------------------------------- :: return
+    conf l c return t  --> n conf l c LIO t
 
-    conf l c t1 n --> conf l' c' t1' n'
-		n <= n'
-    --------------------------------------------------- :: bindCtx
-    conf l c bind t1 t2 n --> conf l' c' bind t1' t2 n'
+    conf l c t1 --> n conf l' c' t1'
+    ------------------------------------------------ :: bindCtx
+    conf l c bind t1 t2 --> n conf l' c' bind t1' t2
 
-    ------------------------------------------------ :: bind
-    conf l c bind LIO t1 t2 n --> conf l c (t2 t1) n
+		n = 0
+    ---------------------------------------------- :: bind
+    conf l c bind LIO t1 t2 --> n conf l c (t2 t1)
 
-    ------------------------------------------- :: getLabel
-    conf l c getLabel n --> conf l c return l n
+		n = 0
+    ----------------------------------------- :: getLabel
+    conf l c getLabel --> n conf l c return l
 
-    ----------------------------------------------- :: getClearance
-    conf l c getClearance n --> conf l c return c n
+		n = 0
+    --------------------------------------------- :: getClearance
+    conf l c getClearance --> n conf l c return c
 
     t1 ~> t1'
-    -------------------------------------------------- :: labelCtx
-    conf l c label t1 t2 n --> conf l c label t1' t2 n
+		n = 0
+    ------------------------------------------------ :: labelCtx
+    conf l c label t1 t2 --> n conf l c label t1' t2
 
     canFlowTo l  l1 ~> true
     canFlowTo l1 c ~> true 
-    -------------------------------------------------------  :: label
-    conf l c label l1 t2 n --> conf l c return (Lb l1 t2) n
+		n = 0
+    -----------------------------------------------------  :: label
+    conf l c label l1 t2 --> n conf l c return (Lb l1 t2)
 
     t ~> t'
-    ---------------------------------------------- :: unlabelCtx
-    conf l c unlabel t n --> conf l c unlabel t' n
+		n = 0
+    -------------------------------------------- :: unlabelCtx
+    conf l c unlabel t --> n conf l c unlabel t'
 
     join l l1 ~> l2
     canFlowTo l2 c ~> true
-    ------------------------------------------------------- :: unlabel
-    conf l c unlabel (Lb l1 t2) n --> conf l2 c return t2 n
+		n = 0
+    ----------------------------------------------------- :: unlabel
+    conf l c unlabel (Lb l1 t2) --> n conf l2 c return t2
 
 		t1 ~> t1'
+		n = 0
     ---------------------------------------------------------- :: toLabeledCtx
-    conf l c toLabeled t1 t2 n --> conf l c toLabeled t1' t2 n
+    conf l c toLabeled t1 t2 --> n conf l c toLabeled t1' t2
 
     canFlowTo l l1 ~> true
     canFlowTo l1 c ~> true
-    conf l c t n -->* conf l' c' LIO t' n'
-    n <= n'
-		n'' = succ n'
+    conf l c t -->* n conf l' c' LIO t'
+		n' = succ n
 		canFlowTo l' l1 ~> true
-    ------------------------------------------------------ :: toLabeled
-    conf l c toLabeled l1 t n --> conf l c label l1 t' n''
+    --------------------------------------------------- :: toLabeled
+    conf l c toLabeled l1 t --> n' conf l c label l1 t'
 
-    --------------------------------------- :: hole
-    conf t1 t2 hole n --> conf t1 t2 hole n
+		n = 0
+    ------------------------------------- :: hole
+    conf t1 t2 hole --> n conf t1 t2 hole
 
     defn
-    m1 -->* m2 ::  :: lio_reduce_multi :: LIO_  {{ com [[m1]] (big-step) reduces to [[m2]] }} by
+    m1 -->* n m2 ::  :: lio_reduce_multi :: LIO_  {{ com [[m1]] (big-step) reduces to [[m2]] executing [[n]] toLabeled-computations }} {{ tex [[m1]] \longrightarrow^*_[[n]] [[m2]] }} by
 
-    conf l c t n --> conf l' c' t' n'
-    --------------------------------- :: onestep
-    conf l c t n -->* conf l' c' t' n'
-
-    ------------------------------ :: done
-    conf l c t n -->* conf l c t n
+    conf l c t --> n conf l' c' t'
+    ------------------------------- :: onestep
+    conf l c t -->* n conf l' c' t'
+		
+		n = 0
+    ---------------------------- :: done
+    conf l c t -->* n conf l c t
 
 
 embed

@@ -46,7 +46,7 @@ Hint Resolve labels_cannot_be_reduced.
 
 Lemma values_cannot_be_lio_reduced : forall l c v n m,
   is_v_of_t v ->
-  ~ (lio_reduce (m_Config l c v n) m).
+  ~ (lio_reduce (m_Config l c v) n m).
 Proof.
   intros l c v n m H1.
   unfold not.
@@ -58,7 +58,7 @@ Hint Resolve values_cannot_be_lio_reduced.
 
 Corollary labels_cannot_be_lio_reduced : forall l c v n m, 
   is_l_of_t v ->
-  ~ (lio_reduce (m_Config l c v n) m).
+  ~ (lio_reduce (m_Config l c v) n m).
 Proof.
   intros l c v n m H1.
   eapply values_cannot_be_lio_reduced.
@@ -254,96 +254,99 @@ Qed.
 Hint Resolve deterministic_pure_reduce.
 
 
-Lemma deterministic_lio_reduce_multi : forall l c t n l1 c1 t1 n1 l2 c2 t2 n2,
-  lio_reduce_multi (m_Config l c t n) (m_Config l1 c1 (t_VLIO t1) n1) ->
-  lio_reduce_multi (m_Config l c t n) (m_Config l2 c2 (t_VLIO t2) n2) ->
-  l1 = l2 /\ c1 = c2 /\ t1 = t2 /\ n1 = n2.
+Lemma deterministic_lio_reduce_multi : forall l c t n n' l1 c1 t1 l2 c2 t2,
+  lio_reduce_multi (m_Config l c t) n (m_Config l1 c1 (t_VLIO t1)) ->
+  lio_reduce_multi (m_Config l c t) n' (m_Config l2 c2 (t_VLIO t2)) ->
+  l1 = l2 /\ c1 = c2 /\ t1 = t2 /\ n = n'.
 Proof.
   intros.
-  term_cases (induction t) Case; try (inversion H; inversion H13).
+  term_cases (induction t) Case; try (inversion H; inversion H12).
   Case "term_VLIO". 
-    inversion H. subst. inversion H13. subst.
-    inversion H0. subst. inversion H15. subst.
+    inversion H. subst. inversion H12. subst.
+    inversion H0. subst. inversion H14. subst.
     eauto.
   Case "term_Return". 
-    inversion H. subst. inversion H13. subst.
-    inversion H0. subst. inversion H21. subst.
+    inversion H. subst. inversion H12. subst.
+    inversion H0. subst. inversion H22. subst.
     eauto.
 Qed.
 
-Lemma deterministic_lio_reduce :
-  deterministic lio_reduce.
+Lemma deterministic_lio_reduce : forall x n y1 n' y2,
+  lio_reduce x n  y1 ->
+  lio_reduce x n' y2 ->
+  y1 = y2 /\ n = n'.
 Proof.
-  unfold deterministic. intros x y1 y2 Hy1 Hy2.
+  intros x n y1 n' y2 Hy1 Hy2.
   generalize dependent y2. 
-  lio_reduce_cases (induction Hy1) Case; intros y2 Hy2.
+  lio_reduce_cases (induction Hy1) Case; intros.
   Case "LIO_return".
-    inversion Hy2. reflexivity.
+    inversion Hy2. subst. eauto.
   Case "LIO_bindCtx".
     inversion Hy2.
-    subst. apply IHHy1 in H14. inversion H14. reflexivity.
-    subst.
-    inversion Hy2.
-    subst. inversion Hy1. 
+    subst. apply IHHy1 in H13. 
+    assert (m_Config l' c' t1' = m_Config l'0 c'0 t1'0). apply H13.
+    inversion H13. inversion H3. subst. eauto.
+    subst. 
+    apply values_cannot_be_lio_reduced in Hy1. contradiction. unfold is_v_of_t. trivial.
   Case "LIO_bind".
     inversion Hy2.
-    subst. inversion H11. reflexivity.
+    subst. inversion H12. subst. eauto.
   Case "LIO_getLabel".
     inversion Hy2.
-    subst. reflexivity.
+    subst. eauto.
   Case "LIO_getClearance".
     inversion Hy2.
-    subst. reflexivity.
+    subst. eauto.
   Case "LIO_labelCtx".
     inversion Hy2.
     subst. 
     assert (t1' = t1'0).
     SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
-    subst t1'0. reflexivity.
+    subst t1'0. eauto.
     subst t1 c0 l_5 t2.
-    apply labels_cannot_be_reduced in H1. solve by inversion. assumption.
+    apply labels_cannot_be_reduced in H1. contradiction. assumption.
   Case "LIO_label".
     inversion Hy2.
     subst. 
-    apply labels_cannot_be_reduced in H12. solve by inversion. assumption.
-    reflexivity.
+    apply labels_cannot_be_reduced in H13. contradiction. assumption.
+    subst. eauto.
   Case "LIO_unlabelCtx".
     inversion Hy2.
     subst. 
     assert (t' = t'0).
     SCase "assertion". apply  deterministic_pure_reduce with (x := t5). assumption. assumption.
-    subst t'0. reflexivity.
+    subst t'0. eauto.
     subst. 
     apply values_cannot_be_reduced in H1. solve by inversion. simpl. trivial.
  Case "LIO_unlabel".
     inversion Hy2.
     subst.
-    apply values_cannot_be_reduced in H12. solve by inversion. simpl. trivial.
+    apply values_cannot_be_reduced in H13. solve by inversion. simpl. trivial.
     subst.
     assert (l2 = l3).
     SCase "assertion". apply deterministic_pure_reduce with (x := t_Join l_5 l1). assumption. assumption.
-    subst l3. reflexivity.
+    subst l3. eauto.
   Case "LIO_toLabeledCtx".
     inversion Hy2.
     subst.
     assert (t1' = t1'0) as Hrwrt.
     SCase "assertion". apply  deterministic_pure_reduce with (x := t1). assumption. assumption.
-    subst t1'0. reflexivity.
+    subst t1'0. eauto.
     apply labels_cannot_be_reduced in H1. contradiction. assumption.
   Case "LIO_toLabeled".
     inversion Hy2.
     subst.
-    apply labels_cannot_be_reduced in H18. contradiction. assumption.
+    apply labels_cannot_be_reduced in H17. contradiction. assumption.
     subst.
-    assert (l' = l'0 /\ c' = c'0 /\ t' = t'0 /\ n' = n'0) as Hrwrt.
+    assert (l' = l'0 /\ c' = c'0 /\ t' = t'0 /\ n5 = n0) as Hrwrt.
     apply deterministic_lio_reduce_multi with (l := l_5) (c := c) (t0 := t5) (n0 := n5).
     SCase "assertion". assumption. assumption.
     assert (t' = t'0) as Hrwrt_t. apply Hrwrt. rewrite Hrwrt_t.
-    assert (n' = n'0) as Hrwrt_n. apply Hrwrt. rewrite Hrwrt_n. 
-    reflexivity.
+    assert (n5 = n0) as Hrwrt_n. apply Hrwrt. rewrite Hrwrt_n. 
+    eauto.
   Case "LIO_hole".
     inversion Hy2.
-    reflexivity.
+    subst. eauto.
 Qed.
 
 Hint Resolve deterministic_lio_reduce.
@@ -492,9 +495,9 @@ Qed.
    and clearance since they are protected by the current labe. *)
 Definition erase_config (l : t) (cfg : m) : m :=
   match cfg with
-   | m_Config l1 c1 t1 n1 => if canFlowTo l1 l === Some true
-                              then m_Config l1 c1 (erase_term l t1) n1
-                              else m_Config t_VHole t_VHole t_VHole n1
+   | m_Config l1 c1 t1 => if canFlowTo l1 l === Some true
+                            then m_Config l1 c1 (erase_term l t1)
+                            else m_Config t_VHole t_VHole t_VHole
   end.
 
 Lemma erase_label_id : forall l l2,
@@ -1280,9 +1283,9 @@ Qed.
 
 (* -->L *)
 Inductive lio_reduce_l : t -> m -> m -> Prop :=
-   | lio_reduce_l_step : forall l m1 m2,
+   | lio_reduce_l_step : forall l n m1 m2,
      is_l_of_t l ->
-     lio_reduce m1 m2 ->
+     lio_reduce m1 n m2 ->
      lio_reduce_l l m1 (erase_config l m2).
 
 Lemma deterministic_lio_reduce_l : forall l x y1 y2,
@@ -1294,9 +1297,10 @@ Proof.
   generalize dependent y2.
   induction Hy1; intros y2 Hy2.
   inversion Hy2.
-  assert (m2 = m3).
+  assert (m2 = m3 /\ n = n0).
   Case "assertion". apply deterministic_lio_reduce with (x := m1). assumption. assumption. 
-  rewrite H6. reflexivity.
+  assert (m2 = m3). apply H6.
+  subst m2. reflexivity.
 Qed.
 
 Hint Resolve deterministic_lio_reduce_l.
@@ -1338,12 +1342,12 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma inv_erase_conf0 : forall l l1 c1 (t2 : t) n1,
+Lemma inv_erase_conf0 : forall l l1 c1 (t2 : t),
   is_l_of_t l ->
   is_l_of_t l1 ->
   is_l_of_t c1 ->
   l1 [/= l ->
-  m_Config t_VHole t_VHole t_VHole n1 = erase_config l (m_Config l1 c1 t2 n1).
+  m_Config t_VHole t_VHole t_VHole = erase_config l (m_Config l1 c1 t2 ).
 Proof.
   intros.
   simpl.
@@ -1351,12 +1355,12 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma inv_erase_conf1 : forall l l1 c1 t1 n1,
+Lemma inv_erase_conf1 : forall l l1 c1 t1,
   is_l_of_t l1 ->
   is_l_of_t c1 ->
   is_l_of_t l ->
   l1 [= l ->
-  m_Config l1 c1 (erase_term l t1) n1 = erase_config l (m_Config l1 c1 t1 n1).
+  m_Config l1 c1 (erase_term l t1) = erase_config l (m_Config l1 c1 t1).
 Proof. 
   intros.
   simpl.
@@ -1364,12 +1368,12 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma inv_erase_return : forall l l1 c1 (t2 : t) n1,
+Lemma inv_erase_return : forall l l1 c1 (t2 : t),
   is_l_of_t l1 ->
   is_l_of_t c1 ->
   is_l_of_t l ->
   l1 [= l ->
-  m_Config l1 c1 (t_Return (erase_term l t2)) n1 = erase_config l (m_Config l1 c1 (t_Return t2) n1).
+  m_Config l1 c1 (t_Return (erase_term l t2)) = erase_config l (m_Config l1 c1 (t_Return t2)).
 Proof. 
   intros.
   simpl.
@@ -1377,13 +1381,13 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma inv_erase_bind : forall l l1 c1 t2 t3 n1,
+Lemma inv_erase_bind : forall l l1 c1 t2 t3,
   is_l_of_t l1 ->
   is_l_of_t c1 ->
   is_l_of_t l ->
   l1 [= l ->
-  m_Config l1 c1 (t_Bind (erase_term l t2) (erase_term l t3)) n1
-  = erase_config l (m_Config l1 c1 (t_Bind t2 t3) n1).
+  m_Config l1 c1 (t_Bind (erase_term l t2) (erase_term l t3))
+  = erase_config l (m_Config l1 c1 (t_Bind t2 t3)).
 Proof. 
   intros.
   simpl.
@@ -1391,26 +1395,25 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma current_label_monotonicity : forall l1 c1 t1 n1 l2 c2 t2 n2,
+Lemma current_label_monotonicity : forall l1 c1 t1 n l2 c2 t2,
   is_l_of_t l1 ->
   is_l_of_t c1 ->
   is_l_of_t l2 ->
   is_l_of_t c2 ->
-  lio_reduce (m_Config l1 c1 t1 n1) (m_Config l2 c2 t2 n2) ->
+  lio_reduce (m_Config l1 c1 t1) n (m_Config l2 c2 t2) ->
   l1 [= l2.
 Proof.
   intros.  
-  generalize dependent n2.
   generalize dependent t2.
   generalize dependent c2.
   generalize dependent l2.
-  generalize dependent n1.
+  generalize dependent n.
   generalize dependent c1.
   generalize dependent l1.
   induction t1; intros;
   inversion H3; try repeat (subst; apply canFlowTo_reflexive; assumption).
   subst.
-  apply IHt1_1 in H17. assumption. assumption. assumption. assumption. assumption.
+  apply IHt1_1 in H16. assumption. assumption. assumption. assumption. assumption.
   subst.
   admit (* l2 = l1 |_| l0  and so l1 [= l2 *).
 Qed.
