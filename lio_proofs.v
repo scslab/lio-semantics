@@ -2061,12 +2061,9 @@ Proof.
    (* need supporting lemma *) admit. 
    (* trivial *) admit.
    assumption. 
-   SSSSCase "t1_1 [/= l".
-
-   apply LIO_toLabeled with (n5 := n5 - 1) (l' := l') (c' := c').
-   assumption. assumption. assumption. assumption. assumption.
-   assumption. assumption. assumption. assumption. 
-  
+   SSSSCase "t1_1 [/= l". admit.
+   SSSSCase "t1_1 [/= l". apply LIO_hole. assumption.
+Qed.
 
       
 
