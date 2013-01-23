@@ -2040,7 +2040,124 @@ Proof.
    apply IHn'.
    assumption. assumption. assumption. assumption. assumption.
    apply LIO_hole. 
-  SCase "term_Bind". admit.
+  SCase "term_Bind". inversion H.
+   SSCase "bindCtx". subst. 
+   rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_Bind t1' t1_2)).
+   simpl. remember (canFlowTo l1 l === Some true). destruct b.
+   SSSCase "l1 [= l". remember (canFlowTo l2 l === Some true). destruct b.
+   SSSSCase "l2 [= l".
+     apply lio_reduce_l_step with (n := S n'). assumption.
+     apply LIO_bindCtx. assumption. assumption. assumption. assumption.
+     rewrite inv_erase_conf1.
+     (* need supporting lemma -1 *) admit.
+     assumption. assumption. assumption. eauto.
+   SSSSCase "l2 [/= l". term_cases(induction t1_1) SSSSSCase.
+     SSSSSCase "term_LBot". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_LA". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_LB". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_LTop". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VTrue". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VFalse". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VUnit". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VAbs". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VLIO". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VLabeled". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
+     SSSSSCase "term_VHole". inversion H12. subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSCase "term_Var". inversion H12. 
+     SSSSSCase "term_App". inversion H12. 
+     SSSSSCase "term_Fix". inversion H12. 
+     SSSSSCase "term_IfEl". inversion H12. 
+     SSSSSCase "term_Join". inversion H12. 
+     SSSSSCase "term_Meet". inversion H12. 
+     SSSSSCase "term_CanFlowTo". inversion H12. 
+     SSSSSCase "term_Return". inversion H12. 
+     subst.
+     rewrite <- Heqb0  in Heqb. solve by inversion.
+     SSSSSCase "term_Bind". inversion H12.
+     SSSSSSCase "bindCtx". subst.
+     rewrite inv_erase_conf0 with (l := l) (l1 := l2) (c1 := c2) (t2 := 
+       (t_Bind (erase_term l (t_Bind t1'0 t1_1_2)) (erase_term l t1_2))).
+     rewrite <- erase_config_idempotent.
+     apply lio_reduce_l_step with (n := S n').
+     assumption.
+     apply LIO_bindCtx.
+     assumption. assumption. assumption. assumption.
+     simpl.
+     apply LIO_bindCtx.
+     assumption. assumption. assumption. assumption.
+     (*need supporting lemma -2 *) admit. 
+     assumption. eauto. eauto. assumption. eauto. 
+     SSSSSSCase "bind". subst.
+     rewrite <- Heqb0  in Heqb. solve by inversion.
+     SSSSSCase "term_GetLabel". inversion H12. 
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSCase "term_GetClearance". inversion H12. 
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSCase "term_LabelOf". inversion H12.
+     SSSSSCase "term_Label". inversion H12. 
+     SSSSSSCase "labelCtx".
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSSCase "label".
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSCase "term_UnLabel". inversion H12. 
+     SSSSSSCase "unlabelCtx".
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSSCase "unlabel".
+     subst.
+     simpl.
+     assert (erase_term l l0 = l0). rewrite erase_label_id. reflexivity.
+     assumption. assumption. rewrite -> H0.
+     destruct (canFlowTo l0 l === Some true).
+     SSSSSSSCase "l0 [= l". 
+     rewrite inv_erase_conf0 with (l := l) (l1 := l2) (c1 := c2) (t2 := t_Bind (t_Return (erase_term l t2)) (erase_term l t1_2)).
+     apply lio_reduce_l_step with (n := S n').
+     assumption.
+     apply LIO_bindCtx.
+     assumption. assumption. assumption. assumption.
+     apply LIO_unlabel.
+     assumption. assumption. assumption. assumption.
+     assumption. assumption. assumption. assumption.
+     assumption. assumption. eauto. 
+     SSSSSSSCase "l0 [/= l".  
+     rewrite inv_erase_conf0 with (l := l) (l1 := l2) (c1 := c2) (t2 := t_Bind (t_Return t_VHole) (erase_term l t1_2)).
+     apply lio_reduce_l_step with (n := S n').
+     assumption.
+     apply LIO_bindCtx.
+     assumption. assumption. assumption. assumption.
+     apply LIO_unlabel.
+     assumption. assumption. assumption. assumption.
+     assumption. assumption. assumption. assumption.
+     assumption. assumption. eauto.
+     SSSSSCase "term_ToLabeled". inversion H12. 
+     SSSSSSCase "toLabeledCtx".
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSSSSCase "toLabeled".
+     subst.
+     rewrite <- Heqb0 in Heqb. solve by inversion.
+     SSSCase "l1 [/= l".
+     remember (canFlowTo l2 l === Some true). destruct b.
+     SSSSCase "l2 [= l".
+     assert ((canFlowTo l1 l2 === Some true) = true).
+     apply current_label_monotonicity with (l1 := l1) (c1 := c1) (t1 := t1_1) (l2 := l2) (c2 := c2) (t2 := t1') (n := S n'). 
+     assumption. assumption.
+     assumption. assumption.
+     assumption. 
+     assert ((canFlowTo l1 l === Some true) = true).
+     apply canFlowTo_transitivie with (l1 := l1) (l2 := l2) (l3 := l).
+     assumption. assumption. assumption.
+     assumption. eauto.
+     rewrite H1 in Heqb. solve by inversion.
+     SSSSCase "l2 [/= l". 
+     apply lio_reduce_l_step with (n := S n'). assumption. apply LIO_hole.
+     assumption.
+   SSCase "bind". subst. inversion H10.
   SCase "term_Label". inversion H. inversion H11. inversion H13.
   SCase "term_UnLabel". inversion H. inversion H10. inversion H13.
   SCase "term_ToLabeled". inversion H.
