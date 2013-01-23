@@ -440,7 +440,6 @@ defns
     --------------------------------------------------- :: toLabeled
     conf l c toLabeled l1 t --> n' conf l c label l1 t'
 
-		n = 0
     ------------------------------------- :: hole
     conf t1 t2 hole --> n conf t1 t2 hole
 
