@@ -466,7 +466,7 @@ Fixpoint erase_term (l term : t) : t :=
    | t_ToLabeled t1 t2 => t_ToLabeled (erase_term l t1)
                           (if canFlowTo (erase_term l t1) l === Some true
                             then erase_term l t2
-                            else t_VHole)
+                            else t_VLIO (t_VHole))
   end.
 
 (* ~>L *)
@@ -1352,6 +1352,34 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma inv_erase_label : forall l l1 (t2 : t),
+  is_l_of_t l ->
+  is_l_of_t l1 ->
+  l1 [/= l ->
+  t_Label l1 t_VHole = erase_term l (t_Label l1 t2).
+Proof.
+  intros.
+  simpl.
+  assert (erase_term l l1 = l1). rewrite erase_label_id. reflexivity. assumption. assumption.
+  rewrite -> H2.
+  rewrite H1.
+  reflexivity.
+Qed.
+
+Lemma inv_erase_toLabeled : forall l l1 (t2 : t),
+  is_l_of_t l ->
+  is_l_of_t l1 ->
+  l1 [/= l ->
+  t_ToLabeled l1 (t_VLIO t_VHole) = erase_term l (t_ToLabeled l1 t2).
+Proof.
+  intros.
+  simpl.
+  assert (erase_term l l1 = l1). rewrite erase_label_id. reflexivity. assumption. assumption.
+  rewrite -> H2.
+  rewrite H1.
+  reflexivity.
+Qed.
+
 Lemma inv_erase_conf0 : forall l l1 c1 (t2 : t),
   is_l_of_t l ->
   is_l_of_t l1 ->
@@ -1384,6 +1412,19 @@ Lemma inv_erase_return : forall l l1 c1 (t2 : t),
   is_l_of_t l ->
   l1 [= l ->
   m_Config l1 c1 (t_Return (erase_term l t2)) = erase_config l (m_Config l1 c1 (t_Return t2)).
+Proof. 
+  intros.
+  simpl.
+  rewrite H2.
+  reflexivity.
+Qed.
+
+Lemma inv_erase_LIO : forall l l1 c1 (t2 : t),
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l ->
+  l1 [= l ->
+  m_Config l1 c1 (t_VLIO (erase_term l t2)) = erase_config l (m_Config l1 c1 (t_VLIO t2)).
 Proof. 
   intros.
   simpl.
@@ -2015,6 +2056,99 @@ Proof.
       contradiction.
 Qed.
 
+Lemma lio_reduce_simulation_n_helper_0 : forall n l l1 c1 t1 l2 c2 t2,
+  is_l_of_t l ->
+  l1 [= l ->
+  l2 [= l ->
+  lio_reduce (m_Config l1 c1 t1) (S n) (m_Config l2 c2 t2) ->
+  lio_reduce (erase_config l (m_Config l1 c1 t1)) (S n) (erase_config l (m_Config l2 c2 t2)).
+Proof.
+  intros n l l1 c1 t1 l2 c2 t2 l_of_t l1_to_l l2_to_l H.
+  generalize dependent t2.
+  generalize dependent c2.
+  generalize dependent l2.
+  generalize dependent n.
+  term_cases (induction t1) Case; intros n l2 l2_to_l c2 t2 H.
+    Case "term_LBot". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_LA". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_LB". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_LTop". apply labels_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VTrue". apply values_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VFalse". apply values_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VUnit". apply values_cannot_be_lio_reduced in H. contradiction. simpl. trivial.
+    Case "term_VAbs". inversion H. 
+    Case "term_VLIO". inversion H.
+    Case "term_VLabeled". inversion H.
+    Case "term_VHole". inversion H. simpl. rewrite l2_to_l. apply LIO_hole.
+    Case "term_Var". inversion H.
+    Case "term_App".  inversion H.
+    Case "term_Fix". inversion H.
+    Case "term_IfEl". inversion H.
+    Case "term_Join". inversion H.
+    Case "term_Meet". inversion H.
+    Case "term_CanFlowTo". inversion H.
+    Case "term_Return". inversion H. 
+     subst.  
+     assert (S n = 0 -> False). omega. apply H0 in H9. contradiction.
+    Case "term_Bind". inversion H. 
+     SCase "bindCtx".
+     subst.  
+     simpl. rewrite l1_to_l. rewrite l2_to_l.
+     apply LIO_bindCtx. assumption. assumption. assumption. assumption.
+     rewrite inv_erase_conf1.
+     rewrite inv_erase_conf1.
+     apply IHt1_1.
+     assumption. assumption. assumption. assumption. assumption.
+     assumption. assumption. assumption. assumption. assumption. 
+     SCase "bind".
+     subst.
+     assert (S n = 0 -> False). omega. apply H0 in H10. contradiction.
+    Case "term_GetLabel". inversion H. 
+     subst.  
+     assert (S n = 0 -> False). omega. apply H0 in H8. contradiction.
+    Case "term_GetClearance". inversion H. 
+     subst.  
+     assert (S n = 0 -> False). omega. apply H0 in H8. contradiction.
+    Case "term_LabelOf". inversion H.
+    Case "term_Label". inversion H.
+     SCase "labelCtx".
+     subst. 
+     assert (S n = 0 -> False). omega. apply H0 in H11. contradiction.
+     SCase "label".
+     subst.
+     assert (S n = 0 -> False). omega. apply H0 in H13. contradiction.
+    Case "term_UnLabel". inversion H.
+      SCase "unlabelCtx".
+      subst. 
+      assert (S n = 0 -> False). omega. apply H0 in H10. contradiction.
+      SCase "unlabel".
+      subst. 
+      assert (S n = 0 -> False). omega. apply H0 in H13. contradiction.
+    Case "term_ToLabeled". inversion H.
+      SCase "toLabeledCtx".
+      subst.
+      assert (S n = 0 -> False). omega. apply H0 in H11. contradiction.
+      SCase "toLabeled".
+      subst. simpl.
+      rewrite l2_to_l.
+      rewrite erase_label_id.
+      destruct (canFlowTo t1_1 l === Some true).
+      SSCase "t1_1 [= l". 
+      apply LIO_toLabeled with (l' := l') (c' := c') (n5 := n5).
+      assumption. assumption. assumption. assumption.
+      assumption. assumption. assumption. admit.
+      assumption. assumption. 
+      SSCase "t1_1 [/= l". 
+      apply LIO_toLabeled with (l' := l') (c' := c') (n5 := n).
+      assumption. assumption. assumption. assumption.
+      assumption. assumption. assumption. 
+      apply LIO_onestep.
+      assumption. assumption. assumption. assumption.
+      admit.
+      (* trivial *) admit.
+      assumption. assumption. assumption. 
+
+
 Lemma lio_reduce_simulation_n : forall n l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   is_l_of_t l1 ->
@@ -2049,7 +2183,7 @@ Proof.
      apply lio_reduce_l_step with (n := S n'). assumption.
      apply LIO_bindCtx. assumption. assumption. assumption. assumption.
      rewrite inv_erase_conf1.
-     (* need supporting lemma -1 *) admit.
+     (* need supporting lemma -1 *) admit. 
      assumption. assumption. assumption. eauto.
    SSSSCase "l2 [/= l". term_cases(induction t1_1) SSSSSCase.
      SSSSSCase "term_LBot". apply values_cannot_be_lio_reduced in H12. contradiction. unfold is_v_of_t. trivial.
