@@ -450,7 +450,6 @@ defns
     ------------------------------- :: onestep
     conf l c t -->* n conf l' c' t'
 		
-		n = 0
     ---------------------------- :: done
     conf l c t -->* n conf l c t
 

@@ -498,7 +498,6 @@ with lio_reduce_multi : m -> n -> m -> Prop :=    (* defn lio_reduce_multi *)
  | LIO_done : forall (l5 c t5:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
-      n5 =0  ->
      lio_reduce_multi (m_Config l5 c t5) n5 (m_Config l5 c t5).
 Hint Constructors pure_reduce lio_reduce GtT : rules.
 
