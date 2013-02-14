@@ -2584,17 +2584,48 @@ Definition l_equiv_term (l t1 t2 :t) : Prop :=
 Definition l_equiv_config (l : t) (m1 m2 :m) : Prop :=
   erase_config l m1 = erase_config l m2.
 
+(* surface syntax *)
+Fixpoint safe (term : t) : Prop :=
+  match term with
+   | t_LBot            => True
+   | t_LA              => True
+   | t_LB              => True
+   | t_LTop            => True
+   | t_VTrue           => True
+   | t_VFalse          => True
+   | t_VUnit           => True
+   | t_VAbs _ t1       => safe t1
+   | t_VLIO _          => False
+   | t_VLabeled _  _   => False
+   | t_VHole           => False
+   | t_Var _           => True
+   | t_App t1 t2       => safe t1 /\ safe t2
+   | t_Fix t1          => safe t1
+   | t_IfEl t1 t2 t3   => safe t1 /\ safe t2 /\ safe t3
+   | t_Join t1 t2      => safe t1 /\ safe t2
+   | t_Meet t1 t2      => safe t1 /\ safe t2
+   | t_CanFlowTo t1 t2 => safe t1 /\ safe t2
+   | t_Return t1       => safe t1
+   | t_Bind t1 t2      => safe t1 /\ safe t2
+   | t_GetLabel        => True
+   | t_GetClearance    => True
+   | t_LabelOf t1      => safe t1
+   | t_Label t1 t2     => safe t1 /\ safe t2
+   | t_UnLabel t1      => safe t1
+   | t_ToLabeled t1 t2 => safe t1 /\ safe t2
+  end.
+
 Theorem non_interference : forall l n (f t1 t2:t) T T' l1 c1 l1' c1' t1',
     is_l_of_t l
  -> is_l_of_t l1  -> is_l_of_t c1
  -> is_l_of_t l1' -> is_l_of_t c1'
 
- -> GtT G_nil f  (T_TArrow (T_TLabeled T) T')
-    (* 0 |- f : Labeled T -> T' *)
- -> GtT G_nil t1 (T_TLabeled T)
-    (* 0 |- t1 : Labeled T *)
- -> GtT G_nil t2 (T_TLabeled T)
-    (* 0 |- t2 : Labeled T *)
+ -> GtT G_nil f  (T_TArrow (T_TLabeled T) T') -> safe f
+    (* 0 |- f : Labeled T -> T' /\ safe f*)
+ -> GtT G_nil t1 (T_TLabeled T) -> safe t1
+    (* 0 |- t1 : Labeled T /\ safe t1*)
+ -> GtT G_nil t2 (T_TLabeled T) -> safe t2
+    (* 0 |- t2 : Labeled T /\ safe t2 *)
  -> l_equiv_term l t1 t2
     (* t1 =L t2 *)
  -> l_equiv_term l t1 t2
