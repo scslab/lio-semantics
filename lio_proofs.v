@@ -2550,3 +2550,29 @@ Proof.
    assumption. assumption. (*trivial *) admit. assumption. 
    SSSCase "l2 [/= l". apply LIO_hole. assumption.
 Qed.
+
+
+Inductive lio_reduce_l_multi : t -> n -> m -> m -> Prop :=
+ | LIO_l_onestep : forall l n m1 m2,
+     is_l_of_t l ->
+     lio_reduce_l l n m1 m2 ->
+     lio_reduce_l_multi l n m1 m2
+ | LIO_l_done : forall l n m1,
+     is_l_of_t l ->
+     lio_reduce_l_multi l n m1 m1.
+
+Lemma simulation_multi: forall l n m1 m2,
+     is_l_of_t l ->
+     lio_reduce_multi m1 n m2 ->
+     lio_reduce_l_multi l n (erase_config l m1) (erase_config l m2).
+Proof.
+  intros. inversion H0.
+  Case "onestep".
+  apply LIO_l_onestep.
+  assumption. 
+  apply lio_reduce_simulation_n.
+  assumption. assumption. assumption. assumption. assumption. assumption. 
+  Case "done".
+  apply LIO_l_done.
+  assumption. 
+Qed.
