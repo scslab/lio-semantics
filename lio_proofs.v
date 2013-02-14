@@ -2576,3 +2576,36 @@ Proof.
   apply LIO_l_done.
   assumption. 
 Qed.
+
+
+Definition l_equiv_term (l t1 t2 :t) : Prop :=
+  erase_term l t1 = erase_term l t2.
+
+Definition l_equiv_config (l : t) (m1 m2 :m) : Prop :=
+  erase_config l m1 = erase_config l m2.
+
+Theorem non_interference : forall l n (f t1 t2:t) T T' l1 c1 l1' c1' t1',
+    is_l_of_t l
+ -> is_l_of_t l1  -> is_l_of_t c1
+ -> is_l_of_t l1' -> is_l_of_t c1'
+
+ -> GtT G_nil f  (T_TArrow (T_TLabeled T) T')
+    (* 0 |- f : Labeled T -> T' *)
+ -> GtT G_nil t1 (T_TLabeled T)
+    (* 0 |- t1 : Labeled T *)
+ -> GtT G_nil t2 (T_TLabeled T)
+    (* 0 |- t2 : Labeled T *)
+ -> l_equiv_term l t1 t2
+    (* t1 =L t2 *)
+ -> l_equiv_term l t1 t2
+    (* t1 =L t2 *)
+ -> lio_reduce_multi (m_Config l1 c1 (t_App f t1)) n (m_Config l1' c1' t1')
+    (*  <l1, c1, f t1> -->*n <l1' c1' t1'> *)
+ -> (exists n', exists l2', exists c2',exists t2' ,
+     is_l_of_t l2' -> is_l_of_t c2' ->
+     lio_reduce_multi (m_Config l1 c1 (t_App f t2)) n' (m_Config l2' c2' t2')
+     /\ l_equiv_config l (m_Config l1' c1' t1') (m_Config l2' c2' t2'))
+    (*  Exists n' l2' c2' t2', 
+       <l1, c1, f t2> -->*n <l2' c2' t2'> /\ <l1' c1' t1'> =L <l2' c2' t2'> *)
+ .
+
