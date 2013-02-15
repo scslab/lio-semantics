@@ -354,6 +354,7 @@ Qed.
 
 Hint Resolve deterministic_lio_reduce.
 
+
 Definition isLabel (t_6:t) : bool :=
   match t_6 with
   | t_LBot => (true)
@@ -2584,6 +2585,8 @@ Definition l_equiv_term (l t1 t2 :t) : Prop :=
 Definition l_equiv_config (l : t) (m1 m2 :m) : Prop :=
   erase_config l m1 = erase_config l m2.
 
+
+
 (* surface syntax *)
 Fixpoint safe (term : t) : Prop :=
   match term with
@@ -2615,28 +2618,103 @@ Fixpoint safe (term : t) : Prop :=
    | t_ToLabeled t1 t2 => safe t1 /\ safe t2
   end.
 
-Theorem non_interference : forall l n (f t1 t2:t) T T' l1 c1 l1' c1' t1',
+Lemma lequiv_config_replace_inner : forall l l1 c1 t1 t2,
+  l_equiv_term l t1 t2 ->
+  erase_config l (m_Config l1 c1 t1) = erase_config l (m_Config l1 c1 t2).
+Proof.
+  intros. inversion H.
+  simpl. remember (canFlowTo l1 l === Some true). destruct b.
+  Case "l1 [= l". rewrite H1. reflexivity.
+  Case "l1 [/= l". reflexivity.
+Qed.  
+
+Theorem non_interference : forall l n f t1 lv1 tv1 t2 lv2 tv2 T T' l1 c1 l1' c1' t1' l2' c2' t2',
     is_l_of_t l
+ -> is_l_of_t lv1 -> is_l_of_t lv2
  -> is_l_of_t l1  -> is_l_of_t c1
  -> is_l_of_t l1' -> is_l_of_t c1'
+ -> is_l_of_t l2' -> is_l_of_t c2'
 
- -> GtT G_nil f  (T_TArrow (T_TLabeled T) T') -> safe f
+ -> GtT G_nil f  (T_TArrow (T_TLabeled T) (T_TLIO T')) -> safe f
     (* 0 |- f : Labeled T -> T' /\ safe f*)
- -> GtT G_nil t1 (T_TLabeled T) -> safe t1
-    (* 0 |- t1 : Labeled T /\ safe t1*)
- -> GtT G_nil t2 (T_TLabeled T) -> safe t2
-    (* 0 |- t2 : Labeled T /\ safe t2 *)
+ -> GtT G_nil tv1 T -> safe tv1 -> t1 = t_VLabeled lv1 tv1
+    (* 0 |- tv1 : T /\ safe tv1*)
+ -> GtT G_nil tv2 T -> safe tv2 -> t2 = t_VLabeled lv2 tv2
+    (* 0 |- tv2 : T /\ safe tv2*)
  -> l_equiv_term l t1 t2
-    (* t1 =L t2 *)
- -> l_equiv_term l t1 t2
-    (* t1 =L t2 *)
- -> lio_reduce_multi (m_Config l1 c1 (t_App f t1)) n (m_Config l1' c1' t1')
+    (* Lb lv1 tv1 =L Lb lv2 tv2 *)
+ -> lio_reduce_multi (m_Config l1 c1 (t_App f t1)) n (m_Config l1' c1' (t_VLIO t1'))
     (*  <l1, c1, f t1> -->*n <l1' c1' t1'> *)
- -> (exists n', exists l2', exists c2',exists t2' ,
-     is_l_of_t l2' -> is_l_of_t c2' ->
-     lio_reduce_multi (m_Config l1 c1 (t_App f t2)) n' (m_Config l2' c2' t2')
-     /\ l_equiv_config l (m_Config l1' c1' t1') (m_Config l2' c2' t2'))
-    (*  Exists n' l2' c2' t2', 
-       <l1, c1, f t2> -->*n <l2' c2' t2'> /\ <l1' c1' t1'> =L <l2' c2' t2'> *)
+ -> lio_reduce_multi (m_Config l1 c1 (t_App f t2)) n (m_Config l2' c2' (t_VLIO t2'))
+    (*  <l1, c1, f t2> -->*n <l2' c2' t2'> *)
+ -> l_equiv_config l (m_Config l1' c1' (t_VLIO t1')) (m_Config l2' c2' (t_VLIO t2'))
+    (* <l1' c1' t1'> =L <l2' c2' t2'> *)
  .
+Proof.
+  intros. subst.
+  apply simulation_multi with (l := l) in H17.
+  apply simulation_multi with (l := l) in H18.
+  assert (
+    (erase_config l (m_Config l1 c1 (t_App f (t_VLabeled lv1 tv1)))) =
+    (erase_config l (m_Config l1 c1 (t_App f (t_VLabeled lv2 tv2))))) as Hrwrt.
+  Case "assert". apply lequiv_config_replace_inner. unfold l_equiv_term. simpl.
+  assert (erase_term l lv1 = lv1) as Hrwrt_lv1. rewrite erase_label_id. reflexivity. assumption. assumption. rewrite Hrwrt_lv1.
+  assert (erase_term l lv2 = lv2) as Hrwrt_lv2. rewrite erase_label_id. reflexivity. assumption. assumption. rewrite Hrwrt_lv2.
+  remember (canFlowTo lv1 l === Some true). destruct b.
+  SCase "lv1 [= l". remember (canFlowTo lv2 l === Some true). destruct b.
+  SSCase "lv2 [= l".  inversion H16.
+  rewrite Hrwrt_lv1 in H19. rewrite <- Heqb in H19.
+  rewrite H19.
+  rewrite Hrwrt_lv1 in H15. rewrite Hrwrt_lv2 in H15. 
+  rewrite H15. reflexivity.
+  SSCase "lv2 [/= l". inversion H16.
+  rewrite Hrwrt_lv1 in H19. rewrite <- Heqb in H19.
+  rewrite Hrwrt_lv1 in H15. rewrite Hrwrt_lv2 in H15. 
+  rewrite H15 in Heqb.
+  rewrite <- Heqb in Heqb0.
+  solve by inversion.
+  SCase "lv1 [/= l". remember (canFlowTo lv2 l === Some true). destruct b. 
+  SSCase "lv2 [= l". inversion H16.
+  rewrite Hrwrt_lv1 in H19. rewrite <- Heqb in H19.
+  rewrite Hrwrt_lv1 in H15. rewrite Hrwrt_lv2 in H15. 
+  rewrite H15 in Heqb.
+  rewrite <- Heqb in Heqb0.
+  solve by inversion.
+  SSCase "lv2 [/= l".  inversion H16.
+  rewrite Hrwrt_lv1 in H15. rewrite Hrwrt_lv2 in H15. 
+  rewrite H15. reflexivity.
+  rewrite Hrwrt in H17.
+  admit.
+  assumption.
+  assumption.
+Qed.
 
+
+Lemma w00t: forall l n m0 l1 c1 t1 l2 c2 t2,
+  lio_reduce_l_multi l n m0 (erase_config l (m_Config l1 c1 (t_VLIO t1))) ->
+  lio_reduce_l_multi l n m0 (erase_config l (m_Config l2 c2 (t_VLIO t2))) ->
+  erase_config l (m_Config l1 c1 (t_VLIO t1)) = erase_config l (m_Config l2 c2 (t_VLIO t2)).
+Proof.
+  intros.
+  generalize dependent t2.
+  generalize dependent c2.
+  generalize dependent l2.
+  induction H. admit.
+  intros. inversion H0. subst.
+  inversion H2. subst.
+
+  intros.
+  inversion H1. subst.
+  apply deterministic_lio_reduce_l with (l := l) (n := n) (x := m1).
+  assumption. assumption.
+  subst.
+  inversion H0.
+  simpl.
+  remember (canFlowTo l2 l === Some true). destruct b.
+  Case "l2 [= l". admit.
+  Case "l2 [/= l". subst.
+   inversion H4. subst.
+  simpl in H0.
+  inversion H0.
+  rewrite <- H6.
+  rewrite <- H6 in H1.
