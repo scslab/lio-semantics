@@ -2628,6 +2628,292 @@ Proof.
   Case "l1 [/= l". reflexivity.
 Qed.  
 
+Definition safe_config (cfg : m) : Prop :=
+  match cfg with
+    | m_Config l c t => safe l /\ safe c /\ safe t
+  end.
+
+Lemma lio_reduce_refl : forall l n l1 c1 t1 l2 c2 t2,
+   lio_reduce_l_multi l n (m_Config l1 c1 (t_VLIO t1))  (m_Config l2 c2 (t_VLIO t2)) ->
+   l1 = l2 /\ c1 = c2 /\ t1 = t2.
+Proof.
+  intros.
+  term_cases (induction t1) Case.
+  Case "term_LBot".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_LA".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_LB".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_LTop".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_VTrue".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_VFalse".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_VUnit".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_VAbs".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_VLIO".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_VLabeled".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto. subst.
+  Case "term_VHole".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Var".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_App".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Fix".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_IfEl".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Join".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Meet".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_CanFlowTo".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Return".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Bind".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_GetLabel".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_GetClearance".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_LabelOf".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_Label".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_UnLabel".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto.
+  Case "term_ToLabeled".
+  inversion H. subst. inversion H1. subst.
+  apply values_cannot_be_lio_reduced in H7. contradiction.
+  unfold is_v_of_t. trivial. eauto. 
+Qed.
+
+
+
+Lemma deterministic_lio_reduce_l_multi : forall lA l c t n l1 c1 t1 l2 c2 t2,
+  is_l_of_t lA ->
+  lio_reduce_l_multi lA n (m_Config l c t) (m_Config l1 c1 (t_VLIO t1)) ->
+  lio_reduce_l_multi lA n (m_Config l c t) (m_Config l2 c2 (t_VLIO t2)) ->
+  l1 = l2 /\ c1 = c2 /\ t1 = t2.
+Proof.
+  intros lA l c t n l1 c1 t1 l2 c2 t2 lA_is_l H H0.
+  term_cases (induction t) Case.
+  Case "term_LBot". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_LBot).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_LA". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_LA).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_LB". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_LB).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_LTop". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_LTop).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_VTrue". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_VTrue).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_VFalse". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_VFalse).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_VUnit". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_VUnit).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_VAbs". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_VAbs x t)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_VLIO". intros.
+  assert (l = l1 /\ c = c1 /\ t = t1) as Hrwrt1.
+  SCase "assertion". apply lio_reduce_refl with (l := lA) (n := n). assumption.
+  assert (l = l2 /\ c = c2 /\ t = t2) as Hrwrt2.
+  SCase "assertion". apply lio_reduce_refl with (l := lA) (n := n). assumption.
+  inversion Hrwrt1. inversion Hrwrt2. inversion H2. inversion H4. subst. assumption.
+  Case "term_VLabeled". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_VLabeled t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_VHole". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c t_VHole).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Var". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Var x)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_App". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_App t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Fix". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Fix t)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_IfEl". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_IfEl t3 t4 t5)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Join". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Join t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Meet". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Meet t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_CanFlowTo". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_CanFlowTo t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Return". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Return t)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Bind". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Bind t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_GetLabel". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_GetLabel)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_GetClearance". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_GetClearance)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_LabelOf". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_LabelOf t)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_Label". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_Label t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_UnLabel". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_UnLabel t)).
+  assumption. assumption.
+  inversion H13. eauto.
+  Case "term_ToLabeled". intros.
+  inversion H. inversion H0.
+  assert ((m_Config l1 c1 (t_VLIO t1)) = (m_Config l2 c2 (t_VLIO t2))).
+  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_ToLabeled t3 t4)).
+  assumption. assumption.
+  inversion H13. eauto.
+Qed.
+
+
 Theorem non_interference : forall l n f t1 lv1 tv1 t2 lv2 tv2 T T' l1 c1 l1' c1' t1' l2' c2' t2',
     is_l_of_t l
  -> is_l_of_t lv1 -> is_l_of_t lv2
@@ -2684,13 +2970,14 @@ Proof.
   rewrite Hrwrt_lv1 in H15. rewrite Hrwrt_lv2 in H15. 
   rewrite H15. reflexivity.
   rewrite Hrwrt in H17.
-  admit.
-  assumption.
-  assumption.
+  unfold l_equiv_config.
+  apply deterministic_lio_reduce_l_multi with (n := n) (m0 := erase_config l (m_Config l1 c1 (t_App f (t_VLabeled lv2 tv2)))).
+  assumption. assumption.
+  assumption. assumption.
 Qed.
 
 
-Lemma w00t: forall l n m0 l1 c1 t1 l2 c2 t2,
+Lemma deterministic_lio_reduce_l_multi: forall l n m0 l1 c1 t1 l2 c2 t2,
   lio_reduce_l_multi l n m0 (erase_config l (m_Config l1 c1 (t_VLIO t1))) ->
   lio_reduce_l_multi l n m0 (erase_config l (m_Config l2 c2 (t_VLIO t2))) ->
   erase_config l (m_Config l1 c1 (t_VLIO t1)) = erase_config l (m_Config l2 c2 (t_VLIO t2)).
