@@ -2931,33 +2931,27 @@ Qed.
 Lemma deterministic_lio_reduce_l_multi1 : forall lA l c t n l1 c1 t1 l2 c2 t2,
   is_l_of_t lA ->
   l [= lA ->
+  (l1 [= lA /\ l2 [= lA) \/ (l1 [/= lA /\ l2 [/= lA) ->
   lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l1 c1 (t_VLIO t1))) ->
   lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l2 c2 (t_VLIO t2))) ->
   (erase_config lA (m_Config l1 c1 (t_VLIO t1))) = (erase_config lA (m_Config l2 c2 (t_VLIO t2))).
 Proof.
   intros.
   simpl.
-  simpl. remember (canFlowTo l1 lA === Some true). destruct b.
-  Case "l1 [= lA". remember (canFlowTo l2 lA === Some true). destruct b.
-  SCase "l2 [= lA".
-  simpl in H1. rewrite <- Heqb in H1. rewrite H0 in H1.
-  simpl in H2. rewrite  H0 in H2. rewrite <- Heqb0 in H2. 
+  destruct H1.
+  destruct H1.
+  simpl in H2. rewrite H1 in H2. rewrite H0 in H2.
+  simpl in H3. rewrite H4 in H3. rewrite H0 in H3.
+  simpl in H1. rewrite H1. rewrite H4.
   assert (l1 = l2 /\ c1 = c2 /\ erase_term lA t1 = erase_term lA t2).
   SSCase "assertion". apply deterministic_lio_reduce_l_multi with (lA := lA) (l := l) (c := c) (t0 := erase_term lA t) (n := n) .
   assumption. assumption. assumption.
-  inversion H3. subst l1. inversion H5. subst c1. inversion H6. reflexivity.
-  SCase "l2 [/= lA".
-  simpl in H1. rewrite <- Heqb in H1. rewrite H0 in H1.
-  simpl in H2. rewrite  H0 in H2. rewrite <- Heqb0 in H2. 
-  assert (l1 = t_VHole /\ c1 = t_VHole /\ erase_term lA t1 = t_VHole).
-  SSCase "assertion". apply deterministic_lio_reduce_l_multi with (lA := lA) (l := l) (c := c) (t0 := erase_term lA t) (n := n) .
-  assumption. assumption. assumption.
-  inversion H3. subst l1. inversion H5. subst c1. inversion H6. reflexivity.
-  SCase "l2 [/= lA".
-  simpl in H1. rewrite <- Heqb in H1. rewrite H0 in H1.
-  Case "l1 [/= lA". remember (canFlowTo l2 lA === Some true). destruct b.
-  SCase "l2 [= lA". admit.
-  SCase "l2 [/= lA". reflexivity.
+  inversion H5. subst l1. inversion H7. subst c1. inversion H8. reflexivity.
+  destruct H1.
+  simpl in H2. rewrite H1 in H2. rewrite H0 in H2.
+  simpl in H3. rewrite H4 in H3. rewrite H0 in H3.
+  simpl in H1. rewrite H1. rewrite H4.
+  reflexivity.
 Qed.
 
 Theorem non_interference : forall l n f t1 lv1 tv1 t2 lv2 tv2 T T' l1 c1 l1' c1' t1' l2' c2' t2',
