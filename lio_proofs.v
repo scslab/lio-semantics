@@ -3009,7 +3009,6 @@ Proof.
   simpl in H5. rewrite H2 in H5. inversion H5. subst.
   simpl in H5. rewrite H2 in H5. inversion H5.
 Qed.  
-*)
 
 Lemma deterministic_lio_reduce_l_0: forall lA l c t n l1 c1 t1 l2 c2 t2 T,
   is_l_of_t lA ->
@@ -3039,8 +3038,9 @@ Proof.
   inversion H12. rewrite H14 in H2. inversion H2.
   assumption. assumption. assumption. assumption.
 Qed.
+*)
 
-Lemma deterministic_lio_reduce_l_multi_0: forall lA l c t n l1 c1 t1 l2 c2 t2 T,
+Lemma deterministic_lio_reduce_l_multi2: forall lA l c t n l1 c1 t1 l2 c2 t2 T,
   is_l_of_t lA ->
   is_l_of_t l ->
   is_l_of_t c ->
@@ -3054,7 +3054,7 @@ Lemma deterministic_lio_reduce_l_multi_0: forall lA l c t n l1 c1 t1 l2 c2 t2 T,
   GtT G_nil t (T_TLIO T) ->
   lio_reduce_l_multi lA n (m_Config l c (erase_term lA t)) (erase_config lA (m_Config l1 c1 (t_VLIO t1))) ->
   lio_reduce_l_multi lA n (m_Config l c (erase_term lA t)) (erase_config lA (m_Config l2 c2 (t_VLIO t2))) ->
-  l1 = l2.
+  (erase_config lA (m_Config l1 c1 (t_VLIO t1))) = (erase_config lA (m_Config l2 c2 (t_VLIO t2))).
 Proof.
   intros.
   generalize dependent t2.
@@ -3080,6 +3080,57 @@ Proof.
   inversion H21.
   inversion H22.
   SCase "LIO_l_done". rewrite H17 in H0. inversion H0.
+Qed.
+
+Lemma deterministic_lio_reduce_l_multi' : forall lA l c t n l1 c1 t1 l2 c2 t2 T,
+  is_l_of_t lA ->
+  is_l_of_t l  ->
+  is_l_of_t c  ->
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l2 ->
+  is_l_of_t c2 ->
+  GtT G_nil t (T_TLIO T) ->
+  lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l1 c1 (t_VLIO t1))) ->
+  lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l2 c2 (t_VLIO t2))) ->
+  (erase_config lA (m_Config l1 c1 (t_VLIO t1))) = (erase_config lA (m_Config l2 c2 (t_VLIO t2))).
+Proof.
+  intros.
+  simpl in H7. simpl in H8.
+  remember (canFlowTo l lA === Some true). destruct b.
+  Case "l [= lA". remember (canFlowTo l1 lA === Some true). destruct b.
+   SCase "l1 [= lA". remember (canFlowTo l2 lA === Some true). destruct b.
+    SSCase "l2 [= lA".
+    apply deterministic_lio_reduce_l_multi1 with (l := l) (c := c) (t0 := t) (n := n).
+    assumption. eauto. eauto. 
+    simpl. rewrite <- Heqb. rewrite <- Heqb0. assumption.
+    simpl. rewrite <- Heqb. rewrite <- Heqb1. assumption.
+    SSCase "l2 [/= lA". 
+    apply deterministic_lio_reduce_l_multi2 with (l := l) (c := c) (t0 := t) (n := n) (T0 := T).
+    assumption. assumption. assumption. assumption. assumption.
+    assumption. assumption. eauto. eauto.  eauto. assumption. 
+    simpl. rewrite <- Heqb0. assumption.
+    simpl. rewrite <- Heqb1. assumption.
+   SCase "l1 [/= lA". remember (canFlowTo l2 lA === Some true). destruct b.
+    SSCase "l2 [= lA".
+    symmetry.
+    apply deterministic_lio_reduce_l_multi2 with (l := l) (c := c) (t0 := t) (n := n) (T0 := T).
+    assumption. assumption. assumption. assumption. assumption.
+    assumption. assumption. eauto. eauto.  eauto. assumption. 
+    simpl. rewrite <- Heqb1. assumption.
+    simpl. rewrite <- Heqb0. assumption.
+    SSCase "l2 [/= lA".
+    apply deterministic_lio_reduce_l_multi1 with (l := l) (c := c) (t0 := t) (n := n).
+    assumption. eauto. eauto. 
+    simpl. rewrite <- Heqb. rewrite <- Heqb0. assumption.
+    simpl. rewrite <- Heqb. rewrite <- Heqb1. assumption.
+  Case "l [/= lA". 
+   apply deterministic_lio_reduce_l_multi0 with (l := l) (c := c) (t0 := t) (n := n).
+   assumption. eauto.
+   simpl. rewrite <- Heqb. 
+   assumption.
+   simpl. rewrite <- Heqb. 
+   assumption.
 Qed.
 
 (*
