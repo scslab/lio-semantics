@@ -632,6 +632,11 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_toLabeled"
   | Case_aux c "LIO_hole" ].
 
+Tactic Notation "lio_reduce_multi_cases" tactic(first) ident(c) :=
+ first;
+  [ Case_aux c "LIO_onestep"
+  | Case_aux c "LIO_done"].
+
 
 
 

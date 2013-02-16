@@ -2918,18 +2918,49 @@ Proof.
   inversion H13. eauto.
 Qed.
 
+
+Lemma label_does_not_decrease : forall lA l c t n l1 c1 t1,
+  is_l_of_t lA ->
+  is_l_of_t l  ->
+  is_l_of_t c  ->
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  l [/= lA ->
+  lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l1 c1 (t_VLIO t1))) ->
+  l1 [/= lA.
+Proof.
+  intros. simpl in H5.
+  rewrite H4 in H5.
+  remember (canFlowTo l1 lA === Some true). destruct b.
+  Case "l1 [= lA". inversion H5. subst. inversion H7. subst. inversion H13. subst.
+  inversion H8.
+  Case "l1 [/= lA". reflexivity.
+Qed.
+
 Lemma deterministic_lio_reduce_l_multi0 : forall lA l c t n l1 c1 t1 l2 c2 t2,
   is_l_of_t lA ->
+  is_l_of_t l  ->
+  is_l_of_t c  ->
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l2 ->
+  is_l_of_t c2 ->
   l [/= lA ->
   lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l1 c1 (t_VLIO t1))) ->
   lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l2 c2 (t_VLIO t2))) ->
   (erase_config lA (m_Config l1 c1 (t_VLIO t1))) = (erase_config lA (m_Config l2 c2 (t_VLIO t2))).
 Proof.
   intros.
-  assert (l1 [/= lA). (* l [/= lA and l [= l1 from motonicity *) admit.
-  assert (l2 [/= lA). (* l [/= lA and l [= l2 from motonicity *) admit.
+  assert (l1 [/= lA).
+  Case "assertion".
+  apply label_does_not_decrease with (l := l) (c := c) (t0 := t) (n := n) (c1 := c1) (t1 := t1).
+  assumption. assumption. assumption. assumption. assumption. eauto. assumption.
+  assert (l2 [/= lA). 
+  Case "assertion".
+  apply label_does_not_decrease with (l := l) (c := c) (t0 := t) (n := n) (c1 := c2) (t1 := t2).
+  assumption. assumption. assumption. assumption. assumption. eauto. assumption.
   simpl.
-  rewrite H3. rewrite H4.
+  rewrite H9. rewrite H10.
   reflexivity.
 Qed.
 
@@ -3126,6 +3157,7 @@ Proof.
     simpl. rewrite <- Heqb. rewrite <- Heqb1. assumption.
   Case "l [/= lA". 
    apply deterministic_lio_reduce_l_multi0 with (l := l) (c := c) (t0 := t) (n := n).
+   assumption. assumption. assumption. assumption. assumption. assumption. 
    assumption. eauto.
    simpl. rewrite <- Heqb. 
    assumption.
