@@ -61,7 +61,8 @@ Inductive t : Set :=  (*r term *)
  | t_LabelOf (t5:t) (*r get label of value *)
  | t_Label (t5:t) (t':t) (*r label *)
  | t_UnLabel (t5:t) (*r unlabel *)
- | t_ToLabeled (t1:t) (t2:t) (*r execute sensitive computation *).
+ | t_ToLabeled (t1:t) (t2:t) (*r execute sensitive computation *)
+ | t_LowerClr (t1:t) (*r lower clearance *).
 
 Definition G : Set := list (termvar*T).
 
@@ -103,6 +104,7 @@ Definition is_l_of_t (t_6:t) : Prop :=
   | (t_Label t5 t') => False
   | (t_UnLabel t5) => False
   | (t_ToLabeled t1 t2) => False
+  | (t_LowerClr t1) => False
 end.
 
 Definition is_v_of_t (t_6:t) : Prop :=
@@ -133,6 +135,7 @@ Definition is_v_of_t (t_6:t) : Prop :=
   | (t_Label t5 t') => False
   | (t_UnLabel t5) => False
   | (t_ToLabeled t1 t2) => False
+  | (t_LowerClr t1) => False
 end.
 
 
@@ -165,6 +168,7 @@ Fixpoint fv_t (t_6:t) : list termvar :=
   | (t_Label t5 t') => (app (fv_t t5) (fv_t t'))
   | (t_UnLabel t5) => ((fv_t t5))
   | (t_ToLabeled t1 t2) => (app (fv_t t1) (fv_t t2))
+  | (t_LowerClr t1) => ((fv_t t1))
 end.
 
 Definition fv_m (m5:m) : list termvar :=
@@ -202,6 +206,7 @@ Fixpoint tsubst_t (t_6:t) (x5:termvar) (t__7:t) {struct t__7} : t :=
   | (t_Label t5 t') => t_Label (tsubst_t t_6 x5 t5) (tsubst_t t_6 x5 t')
   | (t_UnLabel t5) => t_UnLabel (tsubst_t t_6 x5 t5)
   | (t_ToLabeled t1 t2) => t_ToLabeled (tsubst_t t_6 x5 t1) (tsubst_t t_6 x5 t2)
+  | (t_LowerClr t1) => t_LowerClr (tsubst_t t_6 x5 t1)
 end.
 
 Definition tsubst_m (t_5:t) (x5:termvar) (m5:m) : m :=
@@ -289,7 +294,10 @@ Inductive GtT : G -> t -> T -> Prop :=    (* defn GtT *)
  | GtT_toLabeled : forall (G5:G) (t1 t2:t) (T5:T),
      GtT G5 t1 T_TLabel ->
      GtT G5 t2 (T_TLIO T5) ->
-     GtT G5 (t_ToLabeled t1 t2) (T_TLIO  (T_TLabeled T5) ).
+     GtT G5 (t_ToLabeled t1 t2) (T_TLIO  (T_TLabeled T5) )
+ | GtT_lowerClr : forall (G5:G) (t1:t),
+     GtT G5 t1 T_TLabel ->
+     GtT G5 (t_LowerClr t1) (T_TLIO T_TUnit).
 (** definitions *)
 
 (* defns Jpop *)
@@ -485,6 +493,20 @@ Inductive lio_reduce : m -> n -> m -> Prop :=    (* defn lio_reduce *)
       n' = n5 +1  ->
      pure_reduce (t_CanFlowTo l' l1) t_VTrue ->
      lio_reduce (m_Config l_5 c (t_ToLabeled l1 t5)) n' (m_Config l_5 c (t_Label l1 t'))
+ | LIO_lowerClrCtx : forall (l5 c t5:t) (n5:n) (t':t),
+     is_l_of_t l5 ->
+     is_l_of_t c ->
+     pure_reduce t5 t' ->
+      n5 =0  ->
+     lio_reduce (m_Config l5 c (t_LowerClr t5)) n5 (m_Config l5 c (t_LowerClr t'))
+ | LIO_lowerClr : forall (l5 c c1:t) (n5:n),
+     is_l_of_t l5 ->
+     is_l_of_t c ->
+     is_l_of_t c1 ->
+      n5 =0  ->
+     pure_reduce (t_CanFlowTo l5 c1) t_VTrue ->
+     pure_reduce (t_CanFlowTo c1 c) t_VTrue ->
+     lio_reduce (m_Config l5 c (t_LowerClr c1)) n5 (m_Config l5 c1 (t_Return t_VUnit))
  | LIO_hole : forall (t1 t2:t) (n5:n),
      lio_reduce (m_Config t1 t2 t_VHole) n5 (m_Config t1 t2 t_VHole)
 with lio_reduce_multi : m -> n -> m -> Prop :=    (* defn lio_reduce_multi *)
@@ -548,7 +570,8 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_LabelOf"
   | Case_aux c "term_Label"
   | Case_aux c "term_UnLabel"
-  | Case_aux c "term_ToLabeled" ].
+  | Case_aux c "term_ToLabeled"
+  | Case_aux c "term_LowerClr" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
   first;
@@ -630,6 +653,8 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_unlabel"
   | Case_aux c "LIO_toLabeledCtx"
   | Case_aux c "LIO_toLabeled"
+  | Case_aux c "LIO_lowerClrCtx"
+  | Case_aux c "LIO_lowerClr"
   | Case_aux c "LIO_hole" ].
 
 Tactic Notation "lio_reduce_multi_cases" tactic(first) ident(c) :=

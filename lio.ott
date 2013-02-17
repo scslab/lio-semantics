@@ -71,6 +71,7 @@ t :: 't_' ::=  {{ com term }}
     | label t t'            ::   :: Label        {{ com label }}
     | unlabel t             ::   :: UnLabel      {{ com unlabel }}
     | toLabeled t1 t2       ::   :: ToLabeled    {{ com execute sensitive computation }}
+    | lowerClr t1           ::   :: LowerClr     {{ com lower clearance }}
     | ( t )                 :: S :: paren        {{ ich [[t]] }}
     | { t / x } t'          :: M :: tsub         {{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -244,6 +245,10 @@ defn
     G |- t2 : LIO T
     -------------------------------------- :: toLabeled
     G |- toLabeled t1 t2 : LIO (Labeled T)
+
+		G |- t1 : Label
+    ------------------------- :: lowerClr
+    G |- lowerClr t1 : LIO ()
 
 defns
   Jpop :: '' ::=
@@ -440,6 +445,17 @@ defns
     --------------------------------------------------- :: toLabeled
     conf l c toLabeled l1 t --> n' conf l c label l1 t'
 
+		t ~> t'
+		n = 0
+    ---------------------------------------------- :: lowerClrCtx
+    conf l c lowerClr t --> n conf l c lowerClr t'
+
+		n = 0
+		canFlowTo l c1 ~> true
+		canFlowTo c1 c ~> true
+    ---------------------------------------------- :: lowerClr
+    conf l c lowerClr c1 --> n conf l c1 return ()
+
     ------------------------------------- :: hole
     conf t1 t2 hole --> n conf t1 t2 hole
 
@@ -505,7 +521,8 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_LabelOf"
   | Case_aux c "term_Label"
   | Case_aux c "term_UnLabel"
-  | Case_aux c "term_ToLabeled" ].
+  | Case_aux c "term_ToLabeled"
+  | Case_aux c "term_LowerClr" ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
   first;
@@ -587,6 +604,8 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_unlabel"
   | Case_aux c "LIO_toLabeledCtx"
   | Case_aux c "LIO_toLabeled"
+  | Case_aux c "LIO_lowerClrCtx"
+  | Case_aux c "LIO_lowerClr"
   | Case_aux c "LIO_hole" ].
 
 Tactic Notation "lio_reduce_multi_cases" tactic(first) ident(c) :=
