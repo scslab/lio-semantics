@@ -507,8 +507,8 @@ Inductive lio_reduce : m -> n -> m -> Prop :=    (* defn lio_reduce *)
      pure_reduce (t_CanFlowTo l5 c1) t_VTrue ->
      pure_reduce (t_CanFlowTo c1 c) t_VTrue ->
      lio_reduce (m_Config l5 c (t_LowerClr c1)) n5 (m_Config l5 c1 (t_Return t_VUnit))
- | LIO_hole : forall (t1 t2:t) (n5:n),
-     lio_reduce (m_Config t1 t2 t_VHole) n5 (m_Config t1 t2 t_VHole)
+ | LIO_hole : forall (n5:n),
+     lio_reduce (m_Config t_VHole t_VHole t_VHole) n5 (m_Config t_VHole t_VHole t_VHole)
 with lio_reduce_multi : m -> n -> m -> Prop :=    (* defn lio_reduce_multi *)
  | LIO_onestep : forall (l5 c t5:t) (n5:n) (l' c' t':t),
      is_l_of_t l5 ->

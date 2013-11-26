@@ -457,7 +457,7 @@ defns
     conf l c lowerClr c1 --> n conf l c1 return ()
 
     ------------------------------------- :: hole
-    conf t1 t2 hole --> n conf t1 t2 hole
+    conf hole hole hole --> n conf hole hole hole
 
     defn
     m1 -->* n m2 ::  :: lio_reduce_multi :: LIO_  {{ com [[m1]] (big-step) reduces to [[m2]] executing [[n]] toLabeled-computations }} {{ tex [[m1]] \longrightarrow^*_[[n]] [[m2]] }} by
