@@ -394,13 +394,9 @@ defns
     -------------------------------------------------- :: return
     conf l c return t  --> n conf l c LIO t
 
-    conf l c t1 --> n conf l' c' t1'
-    ------------------------------------------------ :: bindCtx
-    conf l c bind t1 t2 --> n conf l' c' bind t1' t2
-
-		n = 0
-    ---------------------------------------------- :: bind
-    conf l c bind LIO t1 t2 --> n conf l c (t2 t1)
+    conf l c t1 -->* n conf l' c' LIO t1'
+    ------------------------------------------------ :: bind
+    conf l c bind t1 t2 --> n conf l' c' (t2 t1')
 
 		n = 0
     ----------------------------------------- :: getLabel
@@ -594,7 +590,6 @@ Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
 Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
  first;
   [ Case_aux c "LIO_return"
-  | Case_aux c "LIO_bindCtx"
   | Case_aux c "LIO_bind"
   | Case_aux c "LIO_getLabel"
   | Case_aux c "LIO_getClearance"

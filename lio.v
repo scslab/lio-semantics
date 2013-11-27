@@ -424,18 +424,13 @@ Inductive lio_reduce : m -> n -> m -> Prop :=    (* defn lio_reduce *)
      is_l_of_t c ->
       n5 =0  ->
      lio_reduce (m_Config l5 c (t_Return t5)) n5 (m_Config l5 c (t_VLIO t5))
- | LIO_bindCtx : forall (l5 c t1 t2:t) (n5:n) (l' c' t1':t),
+ | LIO_bind : forall (l5 c t1 t2:t) (n5:n) (l' c' t1':t),
      is_l_of_t l5 ->
      is_l_of_t c ->
      is_l_of_t l' ->
      is_l_of_t c' ->
-     lio_reduce (m_Config l5 c t1) n5 (m_Config l' c' t1') ->
-     lio_reduce (m_Config l5 c (t_Bind t1 t2)) n5 (m_Config l' c' (t_Bind t1' t2))
- | LIO_bind : forall (l5 c t1 t2:t) (n5:n),
-     is_l_of_t l5 ->
-     is_l_of_t c ->
-      n5 =0  ->
-     lio_reduce (m_Config l5 c (t_Bind (t_VLIO t1) t2)) n5 (m_Config l5 c  (t_App t2 t1) )
+     lio_reduce_multi (m_Config l5 c t1) n5 (m_Config l' c' (t_VLIO t1')) ->
+     lio_reduce (m_Config l5 c (t_Bind t1 t2)) n5 (m_Config l' c'  (t_App t2 t1') )
  | LIO_getLabel : forall (l5 c:t) (n5:n),
      is_l_of_t l5 ->
      is_l_of_t c ->
@@ -643,7 +638,6 @@ Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
 Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
  first;
   [ Case_aux c "LIO_return"
-  | Case_aux c "LIO_bindCtx"
   | Case_aux c "LIO_bind"
   | Case_aux c "LIO_getLabel"
   | Case_aux c "LIO_getClearance"
