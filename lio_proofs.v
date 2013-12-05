@@ -1537,7 +1537,7 @@ Proof.
   apply LIO_hole.
 Qed.
 
-Lemma lio_reduce_simulation_3_unlabel : forall l l1 c1 t1 l2 c2 t2,
+Lemma lio_reduce_simulation_3_unlabel : forall l n l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   is_l_of_t l1 ->
   is_l_of_t c1 ->
@@ -1545,10 +1545,10 @@ Lemma lio_reduce_simulation_3_unlabel : forall l l1 c1 t1 l2 c2 t2,
   is_l_of_t c2 ->
   l1 [=l ->
   l2 [/= l ->
-  lio_reduce (m_Config l1 c1 (t_UnLabel t1)) 0 (m_Config l2 c2 t2) ->
-  lio_reduce_l l 0 (erase_config l (m_Config l1 c1 (t_UnLabel t1))) (erase_config l (m_Config l2 c2 t2)).
+  lio_reduce (m_Config l1 c1 (t_UnLabel t1)) n (m_Config l2 c2 t2) ->
+  lio_reduce_l l n (erase_config l (m_Config l1 c1 (t_UnLabel t1))) (erase_config l (m_Config l2 c2 t2)).
 Proof.
-  intros l l1 c1 t1 l2 c2 t2 l_of_t_l l_of_t_l1 l_of_t_c1 l_of_t_l2 l_of_t_c2 
+  intros l n l1 c1 t1 l2 c2 t2 l_of_t_l l_of_t_l1 l_of_t_c1 l_of_t_l2 l_of_t_c2 
          H1 H H0.
     subst. inversion H0.
     SCase "term_UnLabelCtx". subst.
@@ -1573,7 +1573,7 @@ Proof.
     assumption.
     apply LIO_unlabel.
     assumption. assumption. assumption. assumption.
-    assumption. assumption. assumption. assumption.
+    assumption. assumption. reflexivity. assumption.
     assumption. assumption. assumption. assumption.
     assumption. assumption. 
     SSCase "l0 [/= l".
@@ -1585,7 +1585,7 @@ Proof.
     assumption.
     apply LIO_unlabel.
     assumption. assumption. assumption. assumption.
-    assumption. assumption. assumption. assumption.
+    assumption. assumption. reflexivity. assumption.
     assumption. assumption. assumption. assumption.
     assumption. assumption. assumption. 
 Qed.
@@ -1625,7 +1625,7 @@ Proof.
 Qed.
 
 
-Lemma lio_reduce_simulation_3_bind : forall l l1 c1 t1_1 t1_2 l2 c2 t2,
+Lemma lio_reduce_simulation_3_bind : forall l n l1 c1 t1_1 t1_2 l2 c2 t2,
   is_l_of_t l ->
   is_l_of_t l1 ->
   is_l_of_t c1 ->
@@ -1633,10 +1633,10 @@ Lemma lio_reduce_simulation_3_bind : forall l l1 c1 t1_1 t1_2 l2 c2 t2,
   is_l_of_t c2 ->
   l1 [=l ->
   l2 [/= l ->
-  lio_reduce (m_Config l1 c1 (t_Bind t1_1 t1_2)) 0 (m_Config l2 c2 t2) ->
-  lio_reduce_l l 0 (erase_config l (m_Config l1 c1 (t_Bind t1_1 t1_2))) (erase_config l (m_Config l2 c2 t2)).
+  lio_reduce (m_Config l1 c1 (t_Bind t1_1 t1_2)) n (m_Config l2 c2 t2) ->
+  lio_reduce_l l n (erase_config l (m_Config l1 c1 (t_Bind t1_1 t1_2))) (erase_config l (m_Config l2 c2 t2)).
 Proof.
-  intros l l1 c1 t1_1 t1_2 l2 c2 t2 l_of_t_l l_of_t_l1 l_of_t_c1 l_of_t_l2 l_of_t_c2 
+  intros l n l1 c1 t1_1 t1_2 l2 c2 t2 l_of_t_l l_of_t_l1 l_of_t_c1 l_of_t_l2 l_of_t_c2 
          H1 H H0.
     subst. 
   generalize dependent t2.
@@ -1646,6 +1646,7 @@ Proof.
   generalize dependent c1.
   generalize dependent l1.
   generalize dependent l_of_t_l.
+  generalize dependent n.
   generalize dependent l.
   term_cases (induction t1_1) Case; intros;
     try (inversion H0; subst; inversion H14; subst; inversion H18).
