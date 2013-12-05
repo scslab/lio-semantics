@@ -1505,16 +1505,16 @@ Proof.
       assumption. assumption. assumption. assumption.
 Qed.
 
-Lemma lio_reduce_simulation_1_helper: forall l l1 c1 t1 l2 c2 t2,
+Lemma lio_reduce_simulation_1_helper: forall l n l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   is_l_of_t l1 -> is_l_of_t c1 ->
   is_l_of_t l2 -> is_l_of_t c2 ->
   l1 [/= l ->
   l2 [= l ->
-  lio_reduce (m_Config l1 c1 t1) 0 (m_Config l2 c2 t2) ->
-  lio_reduce (erase_config l (m_Config l1 c1 t1)) 0 (erase_config l (m_Config l2 c2 t2)).
+  lio_reduce (m_Config l1 c1 t1) n (m_Config l2 c2 t2) ->
+  lio_reduce (erase_config l (m_Config l1 c1 t1)) n (erase_config l (m_Config l2 c2 t2)).
 Proof.
-  intros l l1 c1 t1 l2 c2 t2 l1_is_l c1_is_l l2_is_l c2_is_l l_of_t l1_to_l l2_to_l H.
+  intros l n l1 c1 t1 l2 c2 t2 l1_is_l c1_is_l l2_is_l c2_is_l l_of_t l1_to_l l2_to_l H.
   apply current_label_monotonicity in H.
   apply canFlowTo_transitivie with (l1 := l1) (l2 := l2) (l3 := l) in H.
   rewrite H in l1_to_l.
@@ -1523,14 +1523,14 @@ Proof.
   assumption. assumption. 
 Qed.
 
-Lemma lio_reduce_simulation_2_helper: forall l l1 c1 t1 l2 c2 t2,
+Lemma lio_reduce_simulation_2_helper: forall l n l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   l1 [/= l ->
   l2 [/= l ->
-  lio_reduce (m_Config l1 c1 t1) 0 (m_Config l2 c2 t2) ->
+  lio_reduce (m_Config l1 c1 t1) n (m_Config l2 c2 t2) ->
   lio_reduce (erase_config l (m_Config l1 c1 t1)) 0 (erase_config l (m_Config l2 c2 t2)).
 Proof.
-  intros l l1 c1 t1 l2 c2 t2 l_of_t l1_to_l l2_to_l H.
+  intros l n l1 c1 t1 l2 c2 t2 l_of_t l1_to_l l2_to_l H.
   simpl.
   rewrite l1_to_l.
   rewrite l2_to_l.
@@ -1742,7 +1742,7 @@ Proof.
      simpl. rewrite <- Heqb. rewrite <- Heqb0. reflexivity.
      rewrite H5.
      apply lio_reduce_l_step. assumption.
-     apply lio_reduce_simulation_2_helper.
+     apply lio_reduce_simulation_2_helper with (n := 0).
      assumption.
      rewrite <- Heqb. trivial. rewrite <- Heqb0. trivial. assumption.
 Qed.
