@@ -483,10 +483,7 @@ Fixpoint erase_term (l term : t) : t :=
                             then erase_term l t'
                             else t_VHole)
    | t_UnLabel t5      => t_UnLabel (erase_term l t5)
-   | t_ToLabeled t1 t2 => t_ToLabeled (erase_term l t1)
-                          (if canFlowTo (erase_term l t1) l === Some true
-                            then erase_term l t2
-                            else t_VLIO (t_VHole))
+   | t_ToLabeled t1 t2 => t_ToLabeled (erase_term l t1) (erase_term l t2)
    | t_LowerClr t1     => t_LowerClr (erase_term l t1)
   end.
 
@@ -687,11 +684,8 @@ Proof.
   SCase "t1_1 [/= l". reflexivity.
   Case "term_UnLabel". simpl. rewrite <- IHt1. reflexivity.
   Case "term_ToLabeled".
-  simpl. rewrite <- IHt1_1. remember (canFlowTo (erase_term l t1_1) l === Some true).
-  destruct b.
-  SCase "t1_1 [= l".
+  simpl. rewrite <- IHt1_1. 
   rewrite <- IHt1_2. reflexivity.
-  SCase "t1_1 [/= l". reflexivity.
   Case "term_LowerClr". simpl.
   rewrite <- IHt1.  reflexivity.
 Qed.
@@ -770,13 +764,7 @@ Proof.
     reflexivity.
   Case "term_UnLabel". simpl. rewrite IHt2. reflexivity.
   Case "term_ToLabeled". simpl.
-    rewrite tsubst_t_homo_if'.
-    simpl.
-    rewrite IHt2_1. rewrite IHt2_2. 
-    assert (tsubst_t (erase_term l t1) x l = l) as Hrwrt.
-    SCase "assertion". rewrite t_subst_label_id. reflexivity. assumption.
-    rewrite -> Hrwrt.
-    reflexivity.
+    rewrite IHt2_1. rewrite IHt2_2. reflexivity.
   Case "term_LowerClr". simpl. rewrite IHt2. reflexivity.
 Qed.
 
@@ -1087,20 +1075,6 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma inv_erase_toLabeled : forall l l1 (t2 : t),
-  is_l_of_t l ->
-  is_l_of_t l1 ->
-  l1 [/= l ->
-  t_ToLabeled l1 (t_VLIO t_VHole) = erase_term l (t_ToLabeled l1 t2).
-Proof.
-  intros.
-  simpl.
-  assert (erase_term l l1 = l1). rewrite erase_label_id. reflexivity. assumption. assumption.
-  rewrite -> H2.
-  rewrite H1.
-  reflexivity.
-Qed.
-
 Lemma inv_erase_conf0 : forall l l1 c1 (t2 : t),
   is_l_of_t l ->
   is_l_of_t l1 ->
@@ -1366,22 +1340,11 @@ Proof.
     Case "term_ToLabeled". inversion H.  subst. inversion H11.
       SCase "toLabeledCtx".
       subst. simpl. rewrite l2_to_l.
-      assert (canFlowTo (erase_term l t1_1) l = canFlowTo (erase_term l t1') l).
-      SSCase "assertion". (* reducing label does not affect its value *) admit.
-      rewrite H0.
-      destruct (canFlowTo (erase_term l t1') l === Some true).
-      SSCase "t1' [= l".
       apply LIO_onestep. assumption. assumption. assumption. assumption.
       apply LIO_toLabeledCtx.
       assumption. assumption. 
       apply pure_reduce_simulation_helper.
-      assumption. assumption. assumption. 
-      SSCase "t1' [/= l".
-      apply LIO_onestep. assumption. assumption. assumption. assumption.
-      apply LIO_toLabeledCtx.
-      assumption. assumption. 
-      apply pure_reduce_simulation_helper.
-      assumption. assumption. assumption.
+      assumption. assumption. reflexivity. 
       SCase "tolabeled".
       subst.
       assert (0 = n5 + 1 -> False).
@@ -1518,20 +1481,10 @@ Proof.
     Case "term_ToLabeled". inversion H.
       SCase "toLabeledCtx".
       subst. simpl. rewrite l2_to_l.
-      assert (canFlowTo (erase_term l t1_1) l = canFlowTo (erase_term l t1') l).
-      SSCase "assertion". (* reducing label does not affect its value *) admit.
-      rewrite H0.
-      destruct (canFlowTo (erase_term l t1') l === Some true).
-      SSCase "t1' [= l".
       apply LIO_toLabeledCtx.
       assumption. assumption. 
       apply pure_reduce_simulation_helper.
-      assumption. assumption. assumption. 
-      SSCase "t1' [/= l".
-      apply LIO_toLabeledCtx.
-      assumption. assumption. 
-      apply pure_reduce_simulation_helper.
-      assumption. assumption. assumption.
+      assumption. assumption. reflexivity. 
       SCase "tolabeled".
       subst.
       assert (0 = n5 + 1 -> False).
@@ -1721,7 +1674,6 @@ Proof.
   generalize dependent t2.
   generalize dependent c2.
   generalize dependent l2.
-
   generalize dependent l1.
   generalize dependent l_of_t_l.
   term_cases (induction t1) Case; intros; try (inversion H0; subst; rewrite H1 in H; solve by inversion).
