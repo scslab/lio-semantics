@@ -1166,7 +1166,8 @@ Proof.
   apply canFlowTo_reflexive. assumption.
   Case "term_UnLabel". subst.
   inversion H3. subst.
-  admit (* H20: l2 = l1 |_| l0  and so l1 [= l2 *).
+  admit (* H20: l2 = l1 |_| l0
+                l1 [= l2  by definitIon*).
 Qed.
 
 Lemma lio_reduce_multi_simulation_0_helper: forall l l1 c1 t1 l2 c2 t2,
@@ -1282,25 +1283,36 @@ Proof.
      unfold erase_config.
      rewrite l2_to_l. 
      simpl.
-     assert (t1_1 = t1'). admit (* H15 t1_1 ~> t1' *).
+     assert (canFlowTo (erase_term l t1_1) l = canFlowTo (erase_term l t1') l).
+     SSCase "assertion". (* reducing label does not affect its value *) admit.
+     rewrite H0.
      subst.
      remember (canFlowTo (erase_term l t1') l === Some true).  destruct b.
-     SCase "[=".
-     apply LIO_done. assumption. assumption. 
-     SCase "[/=".
-     apply LIO_done. assumption. assumption. 
-     subst.
-     unfold erase_config.
-     rewrite l2_to_l. 
-     simpl.
+     SSCase "[=".
+     apply LIO_onestep. assumption. assumption. assumption. assumption.
+     apply LIO_labelCtx. assumption. assumption.
+     apply pure_reduce_simulation_helper.
+     assumption. assumption. assumption. 
+     SSCase "[/=".
+     apply LIO_onestep. assumption. assumption. assumption. assumption.
+     apply LIO_labelCtx. assumption. assumption.
+     apply pure_reduce_simulation_helper.
+     assumption. assumption. assumption. 
+
      remember (canFlowTo (erase_term l t1_1) l === Some true).  destruct b.
-     SCase "[=".
+     SSCase "[=".
+     simpl.
+     rewrite <- Heqb.
+     rewrite l2_to_l.
      apply LIO_onestep. assumption. assumption.  assumption. assumption. 
      apply LIO_label. assumption. assumption. rewrite erase_label_id.
      assumption. assumption. assumption. rewrite erase_label_id.
      assumption. assumption. assumption. rewrite erase_label_id.
      assumption. assumption. assumption. assumption. 
-     SCase "[/=".
+     SSCase "[/=".
+     simpl.
+     rewrite <- Heqb.
+     rewrite l2_to_l.
      apply LIO_onestep. assumption. assumption.  assumption. assumption. 
      apply LIO_label. assumption. assumption. rewrite erase_label_id.
      assumption. assumption. assumption. rewrite erase_label_id.
@@ -2386,87 +2398,6 @@ Proof.
   reflexivity.
 Qed.
 
-(*
-Lemma reduce_to_hole_unlabel_or_bind : forall lA l c t T n,
-  is_l_of_t lA ->
-  is_l_of_t l ->
-  is_l_of_t c ->
-  l [= lA ->
-  GtT G_nil t (T_TLIO T) ->
-  lio_reduce_l lA n (m_Config l c (erase_term lA t)) (m_Config t_VHole t_VHole t_VHole) ->
-  (exists t', t = t_UnLabel t') \/ (exists t1, exists t2, t = t_Bind t1 t2).
-Proof.
-  intros. 
-  term_cases (induction t) Case; try (inversion H3).
-  Case "term_VLIO". subst.
-  inversion H4. subst. inversion H11.
-  Case "term_VHole". subst.
-  inversion H4. subst. inversion H10. subst.
-  simpl in H5. rewrite H2 in H5.
-  inversion H5. subst. inversion H1.
-  Case "term_Var". subst.
-  inversion H4. subst. inversion H11.
-  Case "term_App". subst.
-  inversion H4. subst. inversion H12.
-  Case "term_Fix". subst.
-  inversion H4. subst. inversion H11.
-  Case "term_IfEl". subst.
-  inversion H4. subst. inversion H13.
-  Case "term_Return". subst.
-  inversion H4. subst. inversion H11. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5. 
-  Case "term_Bind".
-  right. apply ex_intro with (x := t1). apply ex_intro with (x := t2). 
-  reflexivity.
-  Case "term_GetLabel". subst.
-  inversion H4. subst. inversion H10. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5. 
-  Case "term_GetClearance". subst.
-  inversion H4. subst. inversion H10. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5. 
-  Case "term_Label". subst.
-  inversion H4. 
-  subst. inversion H12. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5.
-  Case "term_UnLabel". 
-  left. apply ex_intro with (x := t). reflexivity.
-  Case "term_ToLabeled". subst.
-  inversion H4. subst. inversion H12. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5. subst.
-  simpl in H5. rewrite H2 in H5. inversion H5.
-Qed.  
-
-Lemma deterministic_lio_reduce_l_0: forall lA l c t n l1 c1 t1 l2 c2 t2 T,
-  is_l_of_t lA ->
-  is_l_of_t l ->
-  is_l_of_t c ->
-  is_l_of_t l1 ->
-  is_l_of_t c1 ->
-  is_l_of_t l2 ->
-  is_l_of_t c2 ->
-  l [= lA ->
-  l1 [= lA ->
-  l2 [/= lA ->
-  GtT G_nil t (T_TLIO T) ->
-  lio_reduce_l lA n (m_Config l c (erase_term lA t)) (erase_config lA (m_Config l1 c1 t1)) ->
-  lio_reduce_l lA n (m_Config l c (erase_term lA t)) (erase_config lA (m_Config l2 c2 t2)) ->
-  l1 = l2.
-Proof.
-  intros.
-  simpl in H10. simpl in H11. 
-  rewrite H7 in H10. rewrite H8 in H11.
-  rewrite inv_erase_conf0 with (l := lA) (l1 := l2) (c1 := c2) (t2 := erase_term lA t2) in H11.
-  assert (
-   (m_Config l1 c1 (erase_term lA t1)) = (erase_config lA (m_Config l2 c2 (erase_term lA t2)))).
-  apply deterministic_lio_reduce_l with (l:=lA) (n:= n) (x := m_Config l c (erase_term lA t)).
-  assumption. assumption.
-  simpl in H12. rewrite H8 in H12.
-  inversion H12. rewrite H14 in H2. inversion H2.
-  assumption. assumption. assumption. assumption.
-Qed.
-*)
-
 Lemma deterministic_lio_reduce_l_multi2: forall lA l c t n l1 c1 t1 l2 c2 t2 T,
   is_l_of_t lA ->
   is_l_of_t l ->
@@ -2560,86 +2491,6 @@ Proof.
    simpl. rewrite <- Heqb. 
    assumption.
 Qed.
-
-(*
-Lemma deterministic_lio_reduce_l': forall lA l c t n l1 c1 t1 l2 c2 t2 T,
-  is_l_of_t lA ->
-  GtT G_nil t (T_TLIO T) ->
-  lio_reduce_l lA n (m_Config l c t) (m_Config l1 c1 t1) ->
-  lio_reduce_l lA n (m_Config l c t) (m_Config l2 c2 t2) ->
-  l1 = l2 /\ c1 = c2 /\ t1 = t2.
-Proof.
-  intros lA l c t n l1 c1 t1 l2 c2 t2 lA_is_l t_is_LIO_act H H0.
-  term_cases (induction t) Case; try (inversion H).
-  Case "term_VLIO". intros.
-  inversion H0. inversion H5.
-  assert ((m_Config l1 c1 t1) = (m_Config l2 c2 t2)).
-  apply deterministic_lio_reduce_l with (l := lA) (n:=n) (x := m_Config l c (t_VLIO t)).
-  assumption. assumption.
-  inversion H18. eauto.
-  Case "term_VHole". intros.
-  inversion H0. subst. inversion H2. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c t_VHole) (n := n). 
-  assumption. assumption. subst.
-  rewrite H4 in H1. inversion H1. eauto.
-  Case "term_Var". intros.
-  inversion H0. subst. inversion H5. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_Var x)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H6 in H1. inversion H1. eauto.
-  Case "term_App". intros.
-  inversion H0. subst. inversion H7. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_App t3 t4)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H8 in H1. inversion H1. eauto.
-  Case "term_Fix". intros.
-  inversion H0. subst. inversion H5. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_Fix t)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H6 in H1. inversion H1. eauto.
-  Case "term_IfEl". intros.
-  inversion H0. subst. inversion H9. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_IfEl t3 t4 t5)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H10 in H1. inversion H1. eauto.
-  Case "term_Return". intros.
-  inversion H0. subst. inversion H5. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_Return t)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H6 in H1. inversion H1. eauto.
-  Case "term_Bind". intros.
-  inversion H0. subst. inversion H7. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_Bind t3 t4)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H8 in H1. inversion H1. eauto.
-  Case "term_GetLabel". intros.
-  inversion H0. subst. inversion H3. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c t_GetLabel) (n := n). 
-  assumption. assumption. subst.
-  rewrite H4 in H1. inversion H1. eauto.
-  Case "term_GetClearance". intros.
-  inversion H0. subst. inversion H3. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c t_GetClearance) (n := n). 
-  assumption. assumption. subst.
-  rewrite H4 in H1. inversion H1. eauto.
-  Case "term_Label". intros.
-  inversion H0. subst. inversion H7. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_Label t3 t4)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H8 in H1. inversion H1. eauto.
-  Case "term_UnLabel". intros.
-  inversion H0. subst. inversion H5. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_UnLabel t)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H6 in H1. inversion H1. eauto.
-  Case "term_ToLabeled". intros.
-  inversion H0. subst. inversion H7. subst.
-  assert (m0 = m2).  apply deterministic_lio_reduce with (x:=m_Config l c (t_ToLabeled t3 t4)) (n := n). 
-  assumption. assumption. subst.
-  rewrite H8 in H1. inversion H1. eauto.
-Qed.
-*)
-
 
 
 Theorem non_interference : forall l n f t1 lv1 tv1 t2 lv2 tv2 T T' l1 c1 l1' c1' t1' l2' c2' t2',
