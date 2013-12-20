@@ -7,14 +7,20 @@ metavar termvar, x ::= {{ com term variable }}
     {{ tex \mathit{[[termvar]]} }}
     {{ coq nat }} {{ coq-equality }}
 
-metavar typvar, X ::= {{ com type variable }} 
+metavar typvar, Y ::= {{ com type variable }} 
     {{ tex \mathit{[[typvar]]} }}
     {{ coq nat }} {{ coq-equality }}
 
 metavar n ::= {{ com index count }} 
     {{ coq nat }} {{ coq-equality }}
 
+
+
 grammar
+b :: 'b_' ::= {{ com isexception }} {{ coq bool }} {{ coq-equality }}
+    | noex :: :: noex {{ coq false }} {{ tex \_ }} {{ com noexception }}
+    | ex :: :: ex {{ coq true }} {{ tex X }} {{ com exception }}
+
 %{{{ LABELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 l, c :: 'l_' ::= {{ com label }}
     | bot                   ::   :: LBot         {{ com bottom }} {{ tex \bot }}
@@ -35,8 +41,11 @@ v :: 'v_' ::= {{ com  value }}
     | false                 ::   :: VFalse       {{ com Boolean false }}
     | ()                    ::   :: VUnit        {{ com unit value  }}
     | \ x . t               ::   :: VAbs         {{ com abstraction }}
-    | LIO t                 ::   :: VLIO         {{ com LIO value }} {{ tex ([[t]])^[[LIO]] }}
-    | Lb t1 t2              ::   :: VLabeled     {{ com labeled value }}
+    | LIO b t               ::   :: VLIO         {{ com LIO value }} 
+                                                 {{ tex ([[t]])^{[[LIO]]_[[b]]} }}
+    | Lb b t1 t2            ::   :: VLabeled     {{ com labeled value }} 
+                                                 {{ tex [[Lb]]_[[b]]\ [[t1]]\ [[t2]] }}
+    | X                     ::   :: VException   {{ com exception value }} {{ tex \varepsilon }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %{{{ TERMS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,8 +60,11 @@ t :: 't_' ::=  {{ com term }}
     | false                 ::   :: VFalse       {{ com Boolean false }}
     | ()                    ::   :: VUnit        {{ com unit value  }}
     | \ x . t               ::   :: VAbs         {{ com abstraction }}
-    | LIO t                 ::   :: VLIO         {{ com LIO value }} {{ tex ([[t]])^[[LIO]] }}
-    | Lb t1 t2              ::   :: VLabeled     {{ com labeled value }}
+    | LIO b t               ::   :: VLIO         {{ com LIO value }} 
+                                                 {{ tex ([[t]])^{[[LIO]]_[[b]]} }}
+    | Lb b t1 t2            ::   :: VLabeled     {{ com labeled value }} 
+                                                 {{ tex [[Lb]]_[[b]]\ [[t1]]\ [[t2]] }}
+    | X                     ::   :: VException   {{ com exception value }} {{ tex \varepsilon }}
     | hole                  ::   :: VHole        {{ com hole }} {{ tex \bullet }}
     % ----------------------------------------------------------------------------------------------
     | x                     ::   :: Var          {{ com variable }}         
@@ -72,6 +84,8 @@ t :: 't_' ::=  {{ com term }}
     | unlabel t             ::   :: UnLabel      {{ com unlabel }}
     | toLabeled t1 t2       ::   :: ToLabeled    {{ com execute sensitive computation }}
     | lowerClr t1           ::   :: LowerClr     {{ com lower clearance }}
+    | throwLIO t            ::   :: ThrowLIO     {{ com throw exception }}
+    | catchLIO t1 t2        ::   :: CatchLIO     {{ com catch exception }}
     | ( t )                 :: S :: paren        {{ ich [[t]] }}
     | { t / x } t'          :: M :: tsub         {{ ich ( tsubst_t [[t]] [[x]] [[t']] ) }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,7 +101,8 @@ T {{ tex \tau }} :: T_ ::= {{ com type }}
     | Label                 ::   :: TLabel       {{ com label }} {{ tex \ell }}
     | LIO T                 ::   :: TLIO         {{ com LIO action }} {{ tex [[LIO]] [[T]] }}
     | Labeled T             ::   :: TLabeled     {{ com labeled value }}
-    | X                     ::   :: TVar         {{ com variable }}
+    | Exception             ::   :: TException   {{ com exception value }}
+    | Y                     ::   :: TVar         {{ com variable }}
     | T -> T'               ::   :: TArrow       {{ com function }}
     | ( T )                 :: S :: paren        {{ ich [[T]] }}
 %}}} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,12 +182,15 @@ defn
     G |- t1 : Label
     G |- t2 : T2
     -------------------------- :: labeledVal
-    G |- Lb t1 t2 : Labeled T2
- 
+    G |- Lb b t1 t2 : Labeled T2
+
     G |- t : T
     ------------------ :: lioVal
-    G |- LIO t : LIO T
-    
+    G |- LIO b t : LIO T
+
+    ------------------ :: exception
+    G |- X : Exception
+ 
     ------------- :: hole
     G |- hole : T
 
@@ -249,6 +267,15 @@ defn
 		G |- t1 : Label
     ------------------------- :: lowerClr
     G |- lowerClr t1 : LIO ()
+
+	G |- t : Exception
+    ------------------------- :: throwLIO
+    G |- throwLIO t : LIO T
+
+	G |- t1 : LIO T 
+	G |- t2 : Exception -> LIO T 
+    ------------------------- :: catchLIO
+    G |- catchLIO t1 t2 : LIO T
 
 defns
   Jpop :: '' ::=
@@ -379,7 +406,7 @@ defns
     labelOf t ~> labelOf t'
 
     ------------------------ :: labelOf
-    labelOf (Lb l1 t2) ~> l1
+    labelOf (Lb b l1 t2) ~> l1
 
 		------------ :: hole
  		hole ~> hole
@@ -392,11 +419,15 @@ defns
 
 		n = 0
     -------------------------------------------------- :: return
-    conf l c return t  --> n conf l c LIO t
+    conf l c return t  --> n conf l c LIO noex t
 
-    conf l c t1 -->* n conf l' c' LIO t1'
+    conf l c t1 -->* n conf l' c' LIO noex t1'
     ------------------------------------------------ :: bind
     conf l c bind t1 t2 --> n conf l' c' (t2 t1')
+
+    conf l c t1 -->* n conf l' c' LIO ex t1'
+    ------------------------------------------------ :: bindEx
+    conf l c bind t1 t2 --> n conf l' c' throwLIO t1'
 
 		n = 0
     ----------------------------------------- :: getLabel
@@ -415,7 +446,7 @@ defns
     canFlowTo l1 c ~> true 
 		n = 0
     -----------------------------------------------------  :: label
-    conf l c label l1 t2 --> n conf l c return (Lb l1 t2)
+    conf l c label l1 t2 --> n conf l c return (Lb noex l1 t2)
 
     t ~> t'
 		n = 0
@@ -426,7 +457,13 @@ defns
     canFlowTo l2 c ~> true
 		n = 0
     ----------------------------------------------------- :: unlabel
-    conf l c unlabel (Lb l1 t2) --> n conf l2 c return t2
+    conf l c unlabel (Lb noex l1 t2) --> n conf l2 c return t2
+
+    join l l1 ~> l2
+    canFlowTo l2 c ~> true
+		n = 0
+    ----------------------------------------------------- :: unlabelEx
+    conf l c unlabel (Lb ex l1 t2) --> n conf l2 c throwLIO t2
 
 		t1 ~> t1'
 		n = 0
@@ -435,11 +472,19 @@ defns
 
     canFlowTo l l1 ~> true
     canFlowTo l1 c ~> true
-    conf l c t -->* n conf l' c' LIO t'
+    conf l c t -->* n conf l' c' LIO noex t'
 		n' = succ n
 		canFlowTo l' l1 ~> true
     --------------------------------------------------- :: toLabeled
     conf l c toLabeled l1 t --> n' conf l c label l1 t'
+
+    canFlowTo l l1 ~> true
+    canFlowTo l1 c ~> true
+    conf l c t -->* n conf l' c' LIO ex t'
+		n' = succ n
+		canFlowTo l' l1 ~> true
+    --------------------------------------------------- :: toLabeledEx
+    conf l c toLabeled l1 t --> n' conf l c return (Lb ex l t')
 
 		t ~> t'
 		n = 0
@@ -451,6 +496,19 @@ defns
 		canFlowTo c1 c ~> true
     ---------------------------------------------- :: lowerClr
     conf l c lowerClr c1 --> n conf l c1 return ()
+
+                  n = 0
+    ---------------------------------------------- :: throwLIO
+    conf l c throwLIO t --> n conf l c LIO ex t
+
+                  conf l c t1 -->* n conf l' c' LIO noex t1'
+    -------------------------------------------------------- :: catchLIO
+    conf l c catchLIO t1 t2 --> n conf l' c' return t1'
+
+                  conf l c t1 -->* n conf l' c' LIO ex t1'
+    -------------------------------------------------------- :: catchLIOEx
+    conf l c catchLIO t1 t2 --> n conf l' c' (t2 t1')
+
 
     ------------------------------------- :: hole
     conf hole hole hole --> n conf hole hole hole
@@ -488,7 +546,8 @@ Tactic Notation "value_cases" tactic(first) ident(c) :=
   | Case_aux c "value_VUnit"
   | Case_aux c "value_VAbs"
   | Case_aux c "value_VLIO"
-  | Case_aux c "value_VLabeled" ].
+  | Case_aux c "value_VLabeled"
+  | Case_aux c "value_VException" ].
 
 Tactic Notation "term_cases" tactic(first) ident(c) :=
   first;
@@ -502,6 +561,7 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_VAbs"
   | Case_aux c "term_VLIO"
   | Case_aux c "term_VLabeled"
+  | Case_aux c "term_VException"
   | Case_aux c "term_VHole"
   | Case_aux c "term_Var"
   | Case_aux c "term_App"
@@ -518,7 +578,10 @@ Tactic Notation "term_cases" tactic(first) ident(c) :=
   | Case_aux c "term_Label"
   | Case_aux c "term_UnLabel"
   | Case_aux c "term_ToLabeled"
-  | Case_aux c "term_LowerClr" ].
+  | Case_aux c "term_LowerClr"
+  | Case_aux c "term_ThrowLIO"
+  | Case_aux c "term_CatchLIO"
+  ].
 
 Tactic Notation "type_cases" tactic(first) ident(c) :=
   first;
@@ -531,6 +594,7 @@ Tactic Notation "type_cases" tactic(first) ident(c) :=
   | Case_aux c "GtT_labelTop"
   | Case_aux c "GtT_labeledVal"
   | Case_aux c "GtT_lioVal"
+  | Case_aux c "GtT_exception"
   | Case_aux c "GtT_hole"
   | Case_aux c "GtT_valName"
   | Case_aux c "GtT_abs"
@@ -542,11 +606,14 @@ Tactic Notation "type_cases" tactic(first) ident(c) :=
   | Case_aux c "GtT_canFlowTo"
   | Case_aux c "GtT_return"
   | Case_aux c "GtT_bind"
+  | Case_aux c "GtT_bindEx"
   | Case_aux c "GtT_getLabel"
   | Case_aux c "GtT_getClearance"
   | Case_aux c "GtT_labelOf"
   | Case_aux c "GtT_label"
-  | Case_aux c "GtT_unlabel" ].
+  | Case_aux c "GtT_unlabel"
+  | Case_aux c "GtT_throwLIO"
+  | Case_aux c "GtT_catchLIO" ].
 
 Tactic Notation "pure_reduce_cases" tactic(first) ident(c) :=
   first;
@@ -591,17 +658,24 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
  first;
   [ Case_aux c "LIO_return"
   | Case_aux c "LIO_bind"
+  | Case_aux c "LIO_bindEx"
   | Case_aux c "LIO_getLabel"
   | Case_aux c "LIO_getClearance"
   | Case_aux c "LIO_labelCtx"
   | Case_aux c "LIO_label"
   | Case_aux c "LIO_unlabelCtx"
   | Case_aux c "LIO_unlabel"
+  | Case_aux c "LIO_unlabelEx"
   | Case_aux c "LIO_toLabeledCtx"
   | Case_aux c "LIO_toLabeled"
+  | Case_aux c "LIO_toLabeledEx"
   | Case_aux c "LIO_lowerClrCtx"
   | Case_aux c "LIO_lowerClr"
-  | Case_aux c "LIO_hole" ].
+  | Case_aux c "LIO_throwLIO"
+  | Case_aux c "LIO_catchLIO"
+  | Case_aux c "LIO_catchLIOEx"
+  | Case_aux c "LIO_hole"
+  ].
 
 Tactic Notation "lio_reduce_multi_cases" tactic(first) ident(c) :=
  first;
