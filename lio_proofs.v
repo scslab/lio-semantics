@@ -641,6 +641,7 @@ Inductive pure_reduce_l : t -> t -> t -> Prop :=
      pure_reduce_l l t1 (erase_term l t2).
 
 
+(*
 Lemma deterministic_pure_reduce_l : forall l x y1 y2,
   pure_reduce_l l x y1 ->
   pure_reduce_l l x y2 ->
@@ -655,6 +656,7 @@ Proof.
   subst t3 t1.
   reflexivity.
 Qed.
+*)
 
 (* If the attack observer label does not flow to the current 
    label, erase everything to a hole. This includes the current
@@ -1177,14 +1179,14 @@ Lemma deterministic_lio_reduce_l : forall l n x y1 y2,
   y1 = y2.
 Proof.
   intros l n x y1 y2 Hy1 Hy2. 
-  generalize dependent y2.
-  induction Hy1; intros y2 Hy2.
   inversion Hy2.
-  subst n0.
-  assert (m2 = m3 ).
-  Case "assertion". apply deterministic_lio_reduce with (x := m1) (n := n).
+  subst.
+  inversion Hy1.
+  subst.
+  assert (m0 = m2 ).
+  Case "assertion". apply deterministic_lio_reduce with (x := x) (n := n).
   assumption. assumption. 
-  subst m2. reflexivity.
+  subst. reflexivity.
 Qed.
 
 Hint Resolve deterministic_lio_reduce_l.
@@ -1267,6 +1269,7 @@ Proof.
   reflexivity.
 Qed.
 
+(*
 Lemma inv_erase_return : forall l l1 c1 (t2 : t),
   is_l_of_t l1 ->
   is_l_of_t c1 ->
@@ -1305,6 +1308,7 @@ Proof.
   rewrite H2.
   reflexivity.
 Qed.
+*)
 
 
 Lemma inv_erase_LIO : forall l b l1 c1 (t2 : t),
@@ -1645,37 +1649,6 @@ Proof.
       assumption. assumption.
 Qed.
 
-Lemma lio_reduce_multi_helper: forall n l b l1 c1 t1 l2 c2 t2,
-  is_l_of_t l ->
-  is_l_of_t l1 ->
-  is_l_of_t c1 ->
-  is_l_of_t l2 ->
-  is_l_of_t c2 ->
-  l1 [= l ->
-  lio_reduce_multi (m_Config l1 c1 t1) n (m_Config l2 c2 (t_VLIO b t2)) ->
-  lio_reduce_multi (m_Config l1 c1 (erase_term l t1)) n (m_Config l2 c2 (t_VLIO b (erase_term l t2))).
-Proof.
-  intros.
-  generalize dependent t2.
-  generalize dependent c2.
-  generalize dependent l2.
-  generalize dependent c1.
-  generalize dependent l1.
-  generalize dependent b.
-  term_cases (induction t1) Case; intros; inversion H5; try (inversion H17).
-  Case "term_VLIO". subst.
-    inversion H5.
-    apply values_cannot_be_lio_reduced in H19. contradiction.
-    simpl. trivial.
-    simpl. apply LIO_done. assumption. assumption.
-  Case "term_Return". subst.
-    apply LIO_onestep. assumption. assumption. assumption. assumption.
-    simpl. apply LIO_return. assumption. assumption. reflexivity.
-  Case "term_ThrowLIO". subst.
-    apply LIO_onestep. assumption. assumption. assumption. assumption.
-    simpl. apply LIO_throwLIO. assumption. assumption. reflexivity.
-Qed.
-
 Lemma lio_reduce_simulation_0_helper: forall l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   l1 [= l ->
@@ -1943,8 +1916,7 @@ Proof.
     assumption. assumption. reflexivity. assumption.
     assumption. assumption. assumption. assumption.
     assumption. assumption. assumption. 
-
-    subst.
+    SCase "term_UnLabelEx". subst.
     rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_ThrowLIO t0)).
     remember (canFlowTo (erase_term l l0) l  === Some true). destruct b.
     SSCase "l0 [= l".
@@ -2159,7 +2131,38 @@ Proof.
      rewrite <- Heqb. trivial. rewrite <- Heqb0. trivial. assumption.
 Qed.
 
-Lemma lio_reduce_simulation_n_helper: forall n l l1 c1 t1 l2 c2 t2,
+Lemma lio_reduce_multi_helper: forall n l b l1 c1 t1 l2 c2 t2,
+  is_l_of_t l ->
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l2 ->
+  is_l_of_t c2 ->
+  l1 [= l ->
+  lio_reduce_multi (m_Config l1 c1 t1) n (m_Config l2 c2 (t_VLIO b t2)) ->
+  lio_reduce_multi (m_Config l1 c1 (erase_term l t1)) n (m_Config l2 c2 (t_VLIO b (erase_term l t2))).
+Proof.
+  intros.
+  generalize dependent t2.
+  generalize dependent c2.
+  generalize dependent l2.
+  generalize dependent c1.
+  generalize dependent l1.
+  generalize dependent b.
+  term_cases (induction t1) Case; intros; inversion H5; try (inversion H17).
+  Case "term_VLIO". subst.
+    inversion H5.
+    apply values_cannot_be_lio_reduced in H19. contradiction.
+    simpl. trivial.
+    simpl. apply LIO_done. assumption. assumption.
+  Case "term_Return". subst.
+    apply LIO_onestep. assumption. assumption. assumption. assumption.
+    simpl. apply LIO_return. assumption. assumption. reflexivity.
+  Case "term_ThrowLIO". subst.
+    apply LIO_onestep. assumption. assumption. assumption. assumption.
+    simpl. apply LIO_throwLIO. assumption. assumption. reflexivity.
+Qed.
+
+Lemma lio_reduce_simulation_n_helper': forall n l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   l1 [= l ->
   l2 [= l ->
@@ -2177,7 +2180,7 @@ Proof.
   term_cases (induction t1) Case;
     intros; try (inversion H; subst; try (rewrite l2_to_l in H); solve by inversion).
     Case "term_Bind". inversion H. 
-     SCase "bindCtx".
+     SCase "bind".
      subst.  
      rewrite erase_config_idempotent with (m1 := m_Config l2 c2 (t_App t1_2 t1')).
      simpl. rewrite l1_to_l. rewrite l2_to_l.
@@ -2267,7 +2270,7 @@ Proof.
      assumption. assumption. assumption.
 Qed.
 
-Lemma lio_reduce_simulation_n_helper': forall n l l1 c1 t1 l2 c2 t2,
+Lemma lio_reduce_simulation_n_helper: forall n l l1 c1 t1 l2 c2 t2,
   is_l_of_t l ->
   is_l_of_t l1 ->
   is_l_of_t c1 ->
@@ -2283,7 +2286,7 @@ Proof.
   apply lio_reduce_simulation_0.
   assumption. assumption. assumption. assumption. assumption.
   assumption.
-  apply lio_reduce_simulation_n_helper.
+  apply lio_reduce_simulation_n_helper'.
   assumption. assumption. assumption. assumption. 
 Qed.
 
@@ -2304,7 +2307,7 @@ Proof.
   SCase "[=".
     rewrite inv_erase_conf1.
     rewrite inv_erase_conf1.
-    apply lio_reduce_simulation_n_helper'.
+    apply lio_reduce_simulation_n_helper.
     assumption. assumption. assumption. assumption. assumption. 
     rewrite <- Heqb. reflexivity.
     rewrite <- Heqb0. reflexivity.
@@ -2382,64 +2385,6 @@ Proof.
   assumption. 
 Qed.
 
-
-Definition l_equiv_term (l t1 t2 :t) : Prop :=
-  erase_term l t1 = erase_term l t2.
-
-Definition l_equiv_config (l : t) (m1 m2 :m) : Prop :=
-  erase_config l m1 = erase_config l m2.
-
-
-
-(* surface syntax *)
-Fixpoint safe (term : t) : Prop :=
-  match term with
-   | t_LBot            => True
-   | t_LA              => True
-   | t_LB              => True
-   | t_LTop            => True
-   | t_VTrue           => True
-   | t_VFalse          => True
-   | t_VUnit           => True
-   | t_VAbs _ t1       => safe t1
-   | t_VLIO _ _        => False
-   | t_VLabeled _ _ _  => False
-   | t_VException      => True
-   | t_VHole           => False
-   | t_Var _           => True
-   | t_App t1 t2       => safe t1 /\ safe t2
-   | t_Fix t1          => safe t1
-   | t_IfEl t1 t2 t3   => safe t1 /\ safe t2 /\ safe t3
-   | t_Join t1 t2      => safe t1 /\ safe t2
-   | t_Meet t1 t2      => safe t1 /\ safe t2
-   | t_CanFlowTo t1 t2 => safe t1 /\ safe t2
-   | t_Return t1       => safe t1
-   | t_Bind t1 t2      => safe t1 /\ safe t2
-   | t_GetLabel        => True
-   | t_GetClearance    => True
-   | t_LabelOf t1      => safe t1
-   | t_Label t1 t2     => safe t1 /\ safe t2
-   | t_UnLabel t1      => safe t1
-   | t_ToLabeled t1 t2 => safe t1 /\ safe t2
-   | t_LowerClr t1     => safe t1
-   | t_ThrowLIO t1     => safe t1
-   | t_CatchLIO t1 t2  => safe t1 /\ safe t2
-  end.
-
-Lemma lequiv_config_replace_inner : forall l l1 c1 t1 t2,
-  l_equiv_term l t1 t2 ->
-  erase_config l (m_Config l1 c1 t1) = erase_config l (m_Config l1 c1 t2).
-Proof.
-  intros. inversion H.
-  simpl. remember (canFlowTo l1 l === Some true). destruct b.
-  Case "l1 [= l". rewrite H1. reflexivity.
-  Case "l1 [/= l". reflexivity.
-Qed.  
-
-Definition safe_config (cfg : m) : Prop :=
-  match cfg with
-    | m_Config l c t => safe l /\ safe c /\ safe t
-  end.
 
 Lemma lio_reduce_l_refl : forall l n l1 c1 b1 t1 l2 c2 b2 t2,
    lio_reduce_l_multi l n (m_Config l1 c1 (t_VLIO b1 t1))  (m_Config l2 c2 (t_VLIO b2 t2)) ->
@@ -2568,7 +2513,6 @@ Proof.
   apply values_cannot_be_lio_reduced in H7. contradiction.
   unfold is_v_of_t. trivial. eauto. 
 Qed.
-
 
 
 Lemma deterministic_lio_reduce_l_multi : forall lA l c t n l1 c1 b1 t1 l2 c2 b2 t2,
@@ -2762,7 +2706,6 @@ Proof.
   inversion H13. eauto.
 Qed.
 
-
 Lemma label_does_not_decrease : forall lA l c t n l1 c1 b1 t1,
   is_l_of_t lA ->
   is_l_of_t l  ->
@@ -2819,15 +2762,17 @@ Proof.
   intros.
   simpl.
   destruct H1.
+  Case "l1 [= A /\ l2 [= lA".
   destruct H1.
   simpl in H2. rewrite H1 in H2. rewrite H0 in H2.
   simpl in H3. rewrite H4 in H3. rewrite H0 in H3.
   simpl in H1. rewrite H1. rewrite H4.
   assert (l1 = l2 /\ c1 = c2 /\ erase_term lA t1 = erase_term lA t2 /\ b1 = b2).
-  SSCase "assertion". apply deterministic_lio_reduce_l_multi with (lA := lA) (l := l) (c := c) (t0 := erase_term lA t) (n := n).
+  SCase "assertion". apply deterministic_lio_reduce_l_multi with (lA := lA) (l := l) (c := c) (t0 := erase_term lA t) (n := n).
   assumption. assumption. assumption.
   inversion H5. subst l1. inversion H7. subst c1. inversion H8. subst b1.
   inversion H6. reflexivity.
+  Case "l1 [/= A /\ l2 [/= lA".
   destruct H1.
   simpl in H2. rewrite H1 in H2. rewrite H0 in H2.
   simpl in H3. rewrite H4 in H3. rewrite H0 in H3.
@@ -2835,7 +2780,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma deterministic_lio_reduce_l_multi2: forall lA l c t n l1 c1 b1 t1 l2 c2 b2 t2 T,
+Lemma deterministic_lio_reduce_l_multi2: forall lA l c t n l1 c1 b1 t1 l2 c2 b2 t2 ,
   is_l_of_t lA ->
   is_l_of_t l ->
   is_l_of_t c ->
@@ -2846,38 +2791,37 @@ Lemma deterministic_lio_reduce_l_multi2: forall lA l c t n l1 c1 b1 t1 l2 c2 b2 
   l [= lA ->
   l1 [= lA ->
   l2 [/= lA ->
-  GtT G_nil t (T_TLIO T) ->
   lio_reduce_l_multi lA n (m_Config l c (erase_term lA t)) (erase_config lA (m_Config l1 c1 (t_VLIO b1 t1))) ->
   lio_reduce_l_multi lA n (m_Config l c (erase_term lA t)) (erase_config lA (m_Config l2 c2 (t_VLIO b2 t2))) ->
   (erase_config lA (m_Config l1 c1 (t_VLIO b1 t1))) = (erase_config lA (m_Config l2 c2 (t_VLIO b2 t2))).
 Proof.
   intros.
   generalize dependent t2.
-  lio_reduce_l_multi_cases(inversion H10) Case.
+  lio_reduce_l_multi_cases(inversion H9) Case.
   Case "LIO_l_onestep". intros.
-  simpl in H10. simpl in H17. 
-  rewrite H7 in H10. rewrite H8 in H17.
-  lio_reduce_l_multi_cases(inversion H17) SCase.
+  simpl in H9. simpl in H16. 
+  rewrite H7 in H9. rewrite H8 in H16.
+  lio_reduce_l_multi_cases(inversion H16) SCase.
   SCase "LIO_l_onestep".
-  simpl in H12. rewrite H7 in H12.
+  simpl in H11. rewrite H7 in H11.
   assert ( (m_Config l1 c1 (t_VLIO b1 (erase_term lA t1))) = m_Config t_VHole t_VHole t_VHole).
   apply deterministic_lio_reduce_l with (l := lA) (n := n) (x := m_Config l c (erase_term lA t)).
-  assumption. assumption.  inversion H24.
-  SCase "LIO_l_done". rewrite H18 in H0. inversion H0.
-  Case "LIO_l_done". intros.
-  simpl in H10. simpl in H16. 
-  rewrite H7 in H10. rewrite H8 in H16.
-  rewrite H7 in H11. inversion H11.
-  rewrite H20 in H10.
-  lio_reduce_l_multi_cases(inversion H16) SCase.
-  SCase "LIO_l_onestep". subst. 
-  rewrite H20 in H16. rewrite H20 in H21.
-  inversion H21.
-  inversion H22.
+  assumption. assumption.  inversion H23.
   SCase "LIO_l_done". rewrite H17 in H0. inversion H0.
+  Case "LIO_l_done". intros.
+  simpl in H9. simpl in H15. 
+  rewrite H7 in H9. rewrite H8 in H15.
+  rewrite H7 in H10. inversion H10.
+  rewrite H19 in H9.
+  lio_reduce_l_multi_cases(inversion H15) SCase.
+  SCase "LIO_l_onestep". subst. 
+  rewrite H19 in H15. rewrite H19 in H20.
+  inversion H20.
+  inversion H21.
+  SCase "LIO_l_done". rewrite H16 in H0. inversion H0.
 Qed.
 
-Lemma deterministic_lio_reduce_l_multi' : forall lA l c t n l1 c1 b1 t1 l2 c2 b2 t2 T,
+Lemma deterministic_lio_reduce_l_multi' : forall lA l c t n l1 c1 b1 t1 l2 c2 b2 t2,
   is_l_of_t lA ->
   is_l_of_t l  ->
   is_l_of_t c  ->
@@ -2885,13 +2829,12 @@ Lemma deterministic_lio_reduce_l_multi' : forall lA l c t n l1 c1 b1 t1 l2 c2 b2
   is_l_of_t c1 ->
   is_l_of_t l2 ->
   is_l_of_t c2 ->
-  GtT G_nil t (T_TLIO T) ->
   lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l1 c1 (t_VLIO b1 t1))) ->
   lio_reduce_l_multi lA n (erase_config lA (m_Config l c t)) (erase_config lA (m_Config l2 c2 (t_VLIO b2 t2))) ->
   (erase_config lA (m_Config l1 c1 (t_VLIO b1 t1))) = (erase_config lA (m_Config l2 c2 (t_VLIO b2 t2))).
 Proof.
   intros.
-  simpl in H7. simpl in H8.
+  simpl in H6. simpl in H7.
   remember (canFlowTo l lA === Some true). destruct b.
   Case "l [= lA". remember (canFlowTo l1 lA === Some true). destruct b.
    SCase "l1 [= lA". remember (canFlowTo l2 lA === Some true). destruct b.
@@ -2901,17 +2844,17 @@ Proof.
     simpl. rewrite <- Heqb. rewrite <- Heqb0. assumption.
     simpl. rewrite <- Heqb. rewrite <- Heqb1. assumption.
     SSCase "l2 [/= lA". 
-    apply deterministic_lio_reduce_l_multi2 with (l := l) (c := c) (t0 := t) (n := n) (T0 := T).
+    apply deterministic_lio_reduce_l_multi2 with (l := l) (c := c) (t0 := t) (n := n).
     assumption. assumption. assumption. assumption. assumption.
-    assumption. assumption. eauto. eauto.  eauto. assumption. 
+    assumption. assumption. eauto. eauto.  eauto. 
     simpl. rewrite <- Heqb0. assumption.
     simpl. rewrite <- Heqb1. assumption.
    SCase "l1 [/= lA". remember (canFlowTo l2 lA === Some true). destruct b.
     SSCase "l2 [= lA".
     symmetry.
-    apply deterministic_lio_reduce_l_multi2 with (l := l) (c := c) (t0 := t) (n := n) (T0 := T).
+    apply deterministic_lio_reduce_l_multi2 with (l := l) (c := c) (t0 := t) (n := n).
     assumption. assumption. assumption. assumption. assumption.
-    assumption. assumption. eauto. eauto.  eauto. assumption. 
+    assumption. assumption. eauto. eauto.  eauto. 
     simpl. rewrite <- Heqb1. assumption.
     simpl. rewrite <- Heqb0. assumption.
     SSCase "l2 [/= lA".
@@ -2929,6 +2872,139 @@ Proof.
    assumption.
 Qed.
 
+Definition l_equiv_term (l t1 t2 :t) : Prop :=
+  erase_term l t1 = erase_term l t2.
+
+Definition l_equiv_config (l : t) (m1 m2 :m) : Prop :=
+  erase_config l m1 = erase_config l m2.
+
+
+(* surface syntax *)
+Fixpoint safe (term : t) : Prop :=
+  match term with
+   | t_LBot            => True
+   | t_LA              => True
+   | t_LB              => True
+   | t_LTop            => True
+   | t_VTrue           => True
+   | t_VFalse          => True
+   | t_VUnit           => True
+   | t_VAbs _ t1       => safe t1
+   | t_VLIO _ _        => False
+   | t_VLabeled _ _ _  => False
+   | t_VException      => True
+   | t_VHole           => False
+   | t_Var _           => True
+   | t_App t1 t2       => safe t1 /\ safe t2
+   | t_Fix t1          => safe t1
+   | t_IfEl t1 t2 t3   => safe t1 /\ safe t2 /\ safe t3
+   | t_Join t1 t2      => safe t1 /\ safe t2
+   | t_Meet t1 t2      => safe t1 /\ safe t2
+   | t_CanFlowTo t1 t2 => safe t1 /\ safe t2
+   | t_Return t1       => safe t1
+   | t_Bind t1 t2      => safe t1 /\ safe t2
+   | t_GetLabel        => True
+   | t_GetClearance    => True
+   | t_LabelOf t1      => safe t1
+   | t_Label t1 t2     => safe t1 /\ safe t2
+   | t_UnLabel t1      => safe t1
+   | t_ToLabeled t1 t2 => safe t1 /\ safe t2
+   | t_LowerClr t1     => safe t1
+   | t_ThrowLIO t1     => safe t1
+   | t_CatchLIO t1 t2  => safe t1 /\ safe t2
+  end.
+
+Lemma lequiv_config_replace_inner : forall l l1 c1 t1 t2,
+  l_equiv_term l t1 t2 ->
+  erase_config l (m_Config l1 c1 t1) = erase_config l (m_Config l1 c1 t2).
+Proof.
+  intros. inversion H.
+  simpl. remember (canFlowTo l1 l === Some true). destruct b.
+  Case "l1 [= l". rewrite H1. reflexivity.
+  Case "l1 [/= l". reflexivity.
+Qed.  
+
+Definition safe_config (cfg : m) : Prop :=
+  match cfg with
+    | m_Config l c t => safe l /\ safe c /\ safe t
+  end.
+
+Theorem non_interference': forall l n f t1 b1 lv1 tv1 t2 b2 lv2 tv2 l1 c1 l1' c1' b1' t1' l2' c2' b2' t2',
+    is_l_of_t l
+ -> is_l_of_t lv1 -> is_l_of_t lv2
+ -> is_l_of_t l1  -> is_l_of_t c1
+ -> is_l_of_t l1' -> is_l_of_t c1'
+ -> is_l_of_t l2' -> is_l_of_t c2'
+
+ -> safe f
+    (* 0 |- f : Labeled T -> T' /\ safe f*)
+ -> safe tv1 -> t1 = t_VLabeled b1 lv1 tv1
+    (* 0 |- tv1 : T /\ safe tv1*)
+ -> safe tv2 -> t2 = t_VLabeled b2 lv2 tv2
+    (* 0 |- tv2 : T /\ safe tv2*)
+
+ -> l_equiv_term l t1 t2
+    (* Lb lv1 tv1 =L Lb lv2 tv2 *)
+ -> lio_reduce_multi (m_Config l1 c1 (t_App f t1)) n (m_Config l1' c1' (t_VLIO b1' t1'))
+    (*  <l1, c1, f t1> -->*n <l1' c1' t1'> *)
+ -> lio_reduce_multi (m_Config l1 c1 (t_App f t2)) n (m_Config l2' c2' (t_VLIO b2' t2'))
+    (*  <l1, c1, f t2> -->*n <l2' c2' t2'> *)
+ -> l_equiv_config l (m_Config l1' c1' (t_VLIO b1' t1')) (m_Config l2' c2' (t_VLIO b2' t2'))
+    (* <l1' c1' t1'> =L <l2' c2' t2'> *)
+ .
+Proof.
+  intros. subst.
+  apply simulation_multi with (l := l) in H14.
+  apply simulation_multi with (l := l) in H15.
+  assert (
+    (erase_config l (m_Config l1 c1 (t_App f (t_VLabeled b1 lv1 tv1)))) =
+    (erase_config l (m_Config l1 c1 (t_App f (t_VLabeled b2 lv2 tv2))))) as Hrwrt.
+  Case "assert". apply lequiv_config_replace_inner. unfold l_equiv_term. simpl.
+  assert (erase_term l lv1 = lv1) as Hrwrt_lv1. rewrite erase_label_id. reflexivity. assumption. assumption. rewrite Hrwrt_lv1.
+  assert (erase_term l lv2 = lv2) as Hrwrt_lv2. rewrite erase_label_id. reflexivity. assumption. assumption. rewrite Hrwrt_lv2.
+  remember (canFlowTo lv1 l === Some true). destruct b.
+  SCase "lv1 [= l". remember (canFlowTo lv2 l === Some true). destruct b.
+  SSCase "lv2 [= l".  inversion H13. 
+  rewrite Hrwrt_lv1 in H16. rewrite Hrwrt_lv2 in H16. 
+  subst lv1.
+  rewrite erase_label_id in H17.
+  rewrite <- Heqb in H17.
+  inversion H17.
+  reflexivity.
+  assumption.
+  assumption.
+  SSCase "lv2 [/= l". inversion H13.
+  rewrite Hrwrt_lv1 in H16.
+  rewrite Hrwrt_lv2 in H16. subst lv1.
+  rewrite <- Heqb0 in Heqb.
+  solve by inversion.
+  SCase "lv1 [/= l". remember (canFlowTo lv2 l === Some true). destruct b. 
+  SSCase "lv2 [= l". inversion H13.
+  rewrite Hrwrt_lv1 in H16.
+  rewrite Hrwrt_lv2 in H16. subst lv1.
+  rewrite <- Heqb0 in Heqb.
+  solve by inversion.
+  SSCase "lv2 [/= l".  inversion H13.
+  rewrite Hrwrt_lv1 in H16. rewrite Hrwrt_lv2 in H16. 
+  subst lv1.
+  rewrite erase_label_id in H17.
+  rewrite <- Heqb in H17.
+  inversion H17.
+  reflexivity.
+  assumption.
+  assumption.
+  rewrite Hrwrt in H14.
+  unfold l_equiv_config.
+  apply deterministic_lio_reduce_l_multi' with (l := l1) (c := c1) (t0 := t_App f (t_VLabeled b2 lv2 tv2)) (n := n).
+  assumption. assumption. assumption. assumption.
+  assumption. assumption. assumption.
+  assumption. 
+  assumption. assumption.
+  assumption. 
+Qed.
+
+
+ (* typed: *)
 
 Theorem non_interference : forall l n f t1 b1 lv1 tv1 t2 b2 lv2 tv2 T T' l1 c1 l1' c1' b1' t1' l2' c2' b2' t2',
     is_l_of_t l
@@ -2997,13 +3073,11 @@ Proof.
   assumption.
   rewrite Hrwrt in H19.
   unfold l_equiv_config.
-  apply deterministic_lio_reduce_l_multi' with (l := l1) (c := c1) (t0 := t_App f (t_VLabeled b2 lv2 tv2)) (n := n) (T0 := T'). 
+  apply deterministic_lio_reduce_l_multi' with (l := l1) (c := c1) (t0 := t_App f (t_VLabeled b2 lv2 tv2)) (n := n).
   assumption. assumption. assumption. assumption.
   assumption. assumption. assumption.
-  apply GtT_app with (T1 := T_TLabeled T).
   assumption. 
-  apply GtT_labeledVal. 
   assumption. assumption.
-  assumption. assumption. assumption. assumption.
+  assumption. 
 Qed.
 
