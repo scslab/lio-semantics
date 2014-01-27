@@ -578,6 +578,12 @@ Inductive lio_reduce : m -> n -> m -> Prop :=    (* defn lio_reduce *)
      lio_reduce (m_Config l5 c (t_CatchLIO t1 t2)) n5 (m_Config l' c'  (t_App t2 t1') )
  | LIO_hole : forall (n5:n),
      lio_reduce (m_Config t_VHole t_VHole t_VHole) n5 (m_Config t_VHole t_VHole t_VHole)
+ | LIO_pure : forall (l5 c t1:t) (n5:n) (t1':t),
+     is_l_of_t l5 ->
+     is_l_of_t c ->
+     pure_reduce t1 t1' ->
+      n5 =0  ->
+     lio_reduce (m_Config l5 c t1) n5 (m_Config l5 c t1')
 with lio_reduce_multi : m -> n -> m -> Prop :=    (* defn lio_reduce_multi *)
  | LIO_onestep : forall (l5 c t5:t) (n5:n) (l' c' t':t),
      is_l_of_t l5 ->
@@ -739,6 +745,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_catchLIO"
   | Case_aux c "LIO_catchLIOEx"
   | Case_aux c "LIO_hole"
+  | Case_aux c "LIO_pure"
   ].
 
 Tactic Notation "lio_reduce_multi_cases" tactic(first) ident(c) :=

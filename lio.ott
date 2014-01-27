@@ -513,6 +513,11 @@ defns
     ------------------------------------- :: hole
     conf hole hole hole --> n conf hole hole hole
 
+		t1 ~> t1'
+                n = 0
+    ------------------------------ :: pure
+    conf l c t1 --> n conf l c t1'
+
     defn
     m1 -->* n m2 ::  :: lio_reduce_multi :: LIO_  {{ com [[m1]] (big-step) reduces to [[m2]] executing [[n]] toLabeled-computations }} {{ tex [[m1]] \longrightarrow^*_[[n]] [[m2]] }} by
 
@@ -675,6 +680,7 @@ Tactic Notation "lio_reduce_cases" tactic(first) ident(c) :=
   | Case_aux c "LIO_catchLIO"
   | Case_aux c "LIO_catchLIOEx"
   | Case_aux c "LIO_hole"
+  | Case_aux c "LIO_pure"
   ].
 
 Tactic Notation "lio_reduce_multi_cases" tactic(first) ident(c) :=
