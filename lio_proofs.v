@@ -3541,3 +3541,43 @@ Proof.
   assumption. assumption.
 Qed.
 
+
+Theorem strong_non_interference : forall l n l1 c1 t1 l2 c2 t2 l1' c1' t1' l2' c2' t2' T T',
+    is_l_of_t l
+ -> is_l_of_t l1  -> is_l_of_t c1
+ -> is_l_of_t l2  -> is_l_of_t c2
+ -> is_l_of_t l1' -> is_l_of_t c1'
+ -> is_l_of_t l2' -> is_l_of_t c2'
+
+ -> GtT G_nil t1 (T_TLIO T)
+    (* 0 |- t1 : (T_TLIO T) *)
+ -> GtT G_nil t2 (T_TLIO T)
+    (* 0 |- t2 : (T_TLIO T) *)
+
+ -> GtT G_nil t1' (T_TLIO T')
+    (* 0 |- t1' : (T_TLIO T') *)
+ -> GtT G_nil t2' (T_TLIO T')
+    (* 0 |- t2' : (T_TLIO T') *)
+
+ -> l_equiv_config l (m_Config l1 c1 t1) (m_Config l2 c2 t2)
+    (* <l1 c1 t1> =L <l2 c2 t2> *)
+ -> lio_reduce (m_Config l1 c1 t1) n (m_Config l1' c1' t1')
+    (*  <l1, c1, f t1> -->n <l1' c1' t1'> *)
+ -> lio_reduce (m_Config l2 c2 t2) n (m_Config l2' c2' t2')
+    (*  <l1, c1, f t2> -->n <l2' c2' t2'> *)
+ -> l_equiv_config l (m_Config l1' c1' t1') (m_Config l2' c2' t2')
+    (* <l1' c1' t1'> =L <l2' c2' t2'> *)
+ .
+Proof.
+  intros. subst.
+  apply lio_reduce_simulation_n with (l := l) (T1 := T) (T2 := T') in H13.
+  apply lio_reduce_simulation_n with (l := l) (T1 := T) (T2 := T') in H14.
+  unfold l_equiv_config in H12.
+  rewrite <- H12 in H14.
+  unfold l_equiv_config.
+  apply deterministic_lio_reduce_l with (l := l) (n := n) (x := erase_config l (m_Config l1 c1 t1)).
+  assumption. assumption. assumption. assumption.
+  assumption. assumption. assumption. assumption.
+  assumption. assumption. assumption. assumption.
+  assumption. assumption. assumption. assumption.
+Qed.
