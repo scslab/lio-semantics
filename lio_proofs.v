@@ -1,4 +1,5 @@
 Require Import Arith.
+Require Import Omega.
 Require Import Bool.
 Require Import List.
 Require Import SfLib.
@@ -1399,6 +1400,26 @@ Proof.
 Qed.
 
 Hint Resolve deterministic_lio_reduce_l.
+
+(*
+XXX
+Lemma deterministic_lio_reduce_l_gen : forall l n1 n2 x y1 y2,
+  lio_reduce_l l n1 x y1 ->
+  lio_reduce_l l n2 x y2 ->
+  y1 = y2.
+Proof.
+  intros l n1 n2 x y1 y2 Hy1 Hy2. 
+  intros n_rel.
+  inversion Hy2.
+  subst.
+  inversion Hy1.
+  subst.
+  assert (m0 = m2 ).
+  Case "assertion". apply deterministic_lio_reduce with (x := x) (n := n).
+  assumption. assumption. 
+  subst. reflexivity.
+Qed.
+*)
 
 Lemma erase_config_homo_if : forall l (b : bool)  m1 m2,
   is_l_of_t l ->
@@ -3032,6 +3053,7 @@ Proof.
 Qed.
 
 
+(*
 Lemma deterministic_lio_reduce_l_multi : forall lA l c t n l1 c1 b1 t1 l2 c2 b2 t2,
   is_l_of_t lA ->
   lio_reduce_l_multi lA n (m_Config l c t) (m_Config l1 c1 (t_VLIO b1 t1)) ->
@@ -3390,6 +3412,8 @@ Proof.
    assumption.
 Qed.
 
+*)
+
 Definition l_equiv_term (l t1 t2 :t) : Prop :=
   erase_term l t1 = erase_term l t2.
 
@@ -3447,6 +3471,7 @@ Definition safe_config (cfg : m) : Prop :=
     | m_Config l c t => safe l /\ safe c /\ safe t
   end.
 
+(*
 Theorem non_interference : forall l n f t1 b1 lv1 tv1 t2 b2 lv2 tv2 T T' l1 c1 l1' c1' b1' t1' l2' c2' b2' t2',
     is_l_of_t l
  -> is_l_of_t lv1 -> is_l_of_t lv2
@@ -3541,6 +3566,8 @@ Proof.
   assumption. assumption.
 Qed.
 
+*)
+
 
 Theorem strong_non_interference : forall l n l1 c1 t1 l2 c2 t2 l1' c1' t1' l2' c2' t2' T T',
     is_l_of_t l
@@ -3580,4 +3607,94 @@ Proof.
   assumption. assumption. assumption. assumption.
   assumption. assumption. assumption. assumption.
   assumption. assumption. assumption. assumption.
+Qed.
+
+Lemma current_clearance_monotonicity : forall l1 c1 t1 n l2 c2 t2,
+  is_l_of_t l1 ->
+  is_l_of_t c1 ->
+  is_l_of_t l2 ->
+  is_l_of_t c2 ->
+  lio_reduce (m_Config l1 c1 t1) n (m_Config l2 c2 t2) ->
+  c2 [= c1.
+Proof.
+  intros.  
+  generalize dependent t2.
+  generalize dependent c2.
+  generalize dependent l2.
+  generalize dependent n.
+  generalize dependent c1.
+  generalize dependent l1.
+  term_cases (induction t1) Case; intros;
+  inversion H3; try repeat (subst; apply canFlowTo_reflexive; assumption).
+  Case "term_Bind". subst.
+  inversion H16. subst.
+  apply IHt1_1 in H20. assumption.
+  assumption. assumption. assumption. assumption.
+  subst. 
+  apply canFlowTo_reflexive. assumption.
+  subst.
+  inversion H16. subst.
+  apply IHt1_1 in H20. assumption.
+  assumption. assumption. assumption. assumption.
+  subst. 
+  apply canFlowTo_reflexive. assumption.
+  Case "term_LowerClr". subst.
+  admit (* H16: c2 c1 ~> true *).
+  Case "term_CatchLIO". subst.
+  inversion H16. subst.
+  apply IHt1_1 in H20. assumption.
+  assumption. assumption. assumption. assumption.
+  subst. 
+  apply canFlowTo_reflexive. assumption.
+  subst.
+  inversion H16. subst.
+  apply IHt1_1 in H20. assumption.
+  assumption. assumption. assumption. assumption.
+  subst.
+  apply canFlowTo_reflexive. assumption.
+Qed.
+
+Lemma deterministic_lio_reduce_l_ex : forall l n1 x y1 y2,
+  exists n2,
+  lio_reduce_l l n1 x y1 ->
+  lio_reduce_l l n2 x y2 ->
+  y1 = y2.
+Proof.
+  intros.
+  exists n1.
+  apply deterministic_lio_reduce_l.
+Qed.
+
+
+Theorem strong_non_interference_ex : forall l n1 l1 c1 t1 l2 c2 t2 l1' c1' t1' l2' c2' t2' T T',
+  exists n2,
+    is_l_of_t l
+ -> is_l_of_t l1  -> is_l_of_t c1
+ -> is_l_of_t l2  -> is_l_of_t c2
+ -> is_l_of_t l1' -> is_l_of_t c1'
+ -> is_l_of_t l2' -> is_l_of_t c2'
+
+ -> GtT G_nil t1 (T_TLIO T)
+    (* 0 |- t1 : (T_TLIO T) *)
+ -> GtT G_nil t2 (T_TLIO T)
+    (* 0 |- t2 : (T_TLIO T) *)
+
+ -> GtT G_nil t1' (T_TLIO T')
+    (* 0 |- t1' : (T_TLIO T') *)
+ -> GtT G_nil t2' (T_TLIO T')
+    (* 0 |- t2' : (T_TLIO T') *)
+
+ -> l_equiv_config l (m_Config l1 c1 t1) (m_Config l2 c2 t2)
+    (* <l1 c1 t1> =L <l2 c2 t2> *)
+ -> lio_reduce (m_Config l1 c1 t1) n1 (m_Config l1' c1' t1')
+    (*  <l1, c1, f t1> -->n <l1' c1' t1'> *)
+ -> lio_reduce (m_Config l2 c2 t2) n2 (m_Config l2' c2' t2')
+    (*  <l1, c1, f t2> -->n <l2' c2' t2'> *)
+ -> l_equiv_config l (m_Config l1' c1' t1') (m_Config l2' c2' t2')
+    (* <l1' c1' t1'> =L <l2' c2' t2'> *)
+ .
+Proof.
+  intros. subst.
+  exists n1.
+  apply strong_non_interference.
 Qed.
